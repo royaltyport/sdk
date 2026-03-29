@@ -24,6 +24,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --project integration",
+    "lint": "eslint",
     "link:sdk": "sh scripts/link.sh",
     "unlink:sdk": "sh scripts/unlink.sh",
     "publish:sdk": "sh scripts/publish.sh",
