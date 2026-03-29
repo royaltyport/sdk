@@ -1,6 +1,6 @@
 {
   "name": "@royaltyport/sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Official Node.js SDK for the Royaltyport API",
   "exports": {
