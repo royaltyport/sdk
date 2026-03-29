@@ -24,6 +24,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --project integration",
+    "link:sdk": "sh scripts/link.sh",
+    "unlink:sdk": "sh scripts/unlink.sh",
+    "publish:sdk": "sh scripts/publish.sh",
+    "publish:beta": "sh scripts/publish-beta.sh",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
