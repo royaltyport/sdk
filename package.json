@@ -33,10 +33,10 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@types/node": "22.0.0",
-    "tsup": "8.0.0",
-    "typescript": "6.0.2",
-    "vitest": "3.0.0"
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^6.0.0",
+    "vitest": "^3.0.0"
   },
   "keywords": [
     "royaltyport",
