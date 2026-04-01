@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { client, PROJECT_ID } from './setup.js';
+import { RoyaltyportError } from '../../src/index.js';
 
 describe('Recordings (integration)', () => {
   it('lists recordings with pagination', async () => {
@@ -14,5 +15,22 @@ describe('Recordings (integration)', () => {
     const { data } = await client.recordings.list(PROJECT_ID, { includeProducts: true });
 
     expect(data).toHaveProperty('items');
+  });
+
+  it('gets a recording by ID', async () => {
+    const { data: listData } = await client.recordings.list(PROJECT_ID, { page: 1, perPage: 1 });
+    if (listData.items.length === 0) return;
+
+    const recordingId = listData.items[0].id;
+    const { data, rateLimit } = await client.recordings.get(PROJECT_ID, recordingId);
+
+    expect(data.id).toBe(recordingId);
+    expect(typeof data.name).toBe('string');
+    expect(typeof data.created_at).toBe('string');
+    expect(rateLimit.limit).toBeGreaterThan(0);
+  });
+
+  it('throws RoyaltyportError for non-existent recording ID', async () => {
+    await expect(client.recordings.get(PROJECT_ID, 999999999)).rejects.toThrow(RoyaltyportError);
   });
 });
