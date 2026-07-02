@@ -1,6 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Contracts } from './contracts.js';
 import { createMockHttp } from './test-helpers.js';
+import type { HttpClient } from '../http.js';
+
+function mockUploadFlow(http: HttpClient) {
+  const rateLimit = { limit: 100, remaining: 99, reset: 0 };
+  vi.mocked(http.post)
+    .mockResolvedValueOnce({
+      data: { staging_id: 42, upload_url: 'https://storage.example.com/signed', file_path: 'proj-1/contracts_staging/abc' },
+      rateLimit,
+    })
+    .mockResolvedValueOnce({ data: { staging_id: 42, status: 'uploaded' }, rateLimit });
+}
 
 describe('Contracts', () => {
   it('list passes projectId, pagination, and includes', async () => {
@@ -43,49 +54,54 @@ describe('Contracts', () => {
     });
   });
 
-  it('upload sends FormData via postMultipart', async () => {
+  it('upload runs the mint -> put -> complete flow', async () => {
     const http = createMockHttp();
+    mockUploadFlow(http);
     const contracts = new Contracts(http);
 
-    const blob = new Blob(['fake pdf'], { type: 'application/pdf' });
-    await contracts.upload('proj-1', blob, { fileName: 'test.pdf' });
+    const blob = new Blob(['%PDF-1.4 pdf'], { type: 'application/pdf' });
+    const result = await contracts.upload('proj-1', blob, { fileName: 'test.pdf' });
 
-    expect(http.postMultipart).toHaveBeenCalledWith(
-      '/contracts',
-      expect.any(FormData),
+    expect(http.post).toHaveBeenNthCalledWith(
+      1,
+      '/contracts/uploads',
+      { fileName: 'test.pdf', fileType: 'application/pdf', fileSize: 12, fileExtension: 'pdf' },
       { projectId: 'proj-1' },
-      undefined,
     );
+    expect(http.putExternal).toHaveBeenCalledWith('https://storage.example.com/signed', {
+      headers: { 'content-type': 'application/pdf', 'x-upsert': 'true' },
+      body: expect.any(Uint8Array),
+    });
+    expect(http.post).toHaveBeenNthCalledWith(
+      2,
+      '/contracts/uploads/complete',
+      { stagingId: 42 },
+      { projectId: 'proj-1' },
+      { retryNetworkErrors: false },
+    );
+    expect(result.data).toEqual({
+      staging_id: 42,
+      status: 'uploaded',
+      file_path: 'proj-1/contracts_staging/abc',
+    });
   });
 
-  it('upload passes onProgress as uploadOptions', async () => {
+  it('upload sends extractions as a JSON array in the mint body', async () => {
     const http = createMockHttp();
+    mockUploadFlow(http);
     const contracts = new Contracts(http);
 
-    const onProgress = () => {};
-    const blob = new Blob(['fake pdf'], { type: 'application/pdf' });
-    await contracts.upload('proj-1', blob, { onProgress });
-
-    expect(http.postMultipart).toHaveBeenCalledWith(
-      '/contracts',
-      expect.any(FormData),
-      { projectId: 'proj-1' },
-      { onProgress },
-    );
-  });
-
-  it('upload appends extractions to FormData', async () => {
-    const http = createMockHttp();
-    const contracts = new Contracts(http);
-
-    const blob = new Blob(['fake pdf'], { type: 'application/pdf' });
+    const blob = new Blob(['%PDF-1.4 pdf'], { type: 'application/pdf' });
     await contracts.upload('proj-1', blob, {
       extractions: ['extract-royalties', 'extract-dates'],
     });
 
-    const formData = (http.postMultipart as ReturnType<typeof import('vitest').vi.fn>).mock.calls[0]![1] as FormData;
-    expect(formData.get('extractions')).toBe('["extract-royalties","extract-dates"]');
-    expect(formData.get('file')).toBeInstanceOf(Blob);
+    expect(http.post).toHaveBeenNthCalledWith(
+      1,
+      '/contracts/uploads',
+      expect.objectContaining({ extractions: ['extract-royalties', 'extract-dates'] }),
+      { projectId: 'proj-1' },
+    );
   });
 
   it('download calls correct path', async () => {

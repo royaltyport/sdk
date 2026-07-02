@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { basename } from 'node:path';
 import type { ApiResponse, PaginatedResult } from '../types/common.js';
 import type {
   Statement,
@@ -10,6 +8,7 @@ import type {
   StatementProcesses,
 } from '../types/statements.js';
 import { BaseResource } from './base.js';
+import { runUploadFlow } from './upload-flow.js';
 
 export class Statements extends BaseResource {
   async list(projectId: string, options?: StatementListOptions): Promise<ApiResponse<PaginatedResult<Statement>>> {
@@ -29,23 +28,7 @@ export class Statements extends BaseResource {
     file: Buffer | Uint8Array | Blob | string,
     options?: StatementUploadOptions,
   ): Promise<ApiResponse<StatementUploadResult>> {
-    const formData = new FormData();
-
-    if (typeof file === 'string') {
-      const fileBuffer = readFileSync(file);
-      const fileName = options?.fileName ?? basename(file);
-      const fileType = options?.fileType ?? 'application/pdf';
-      formData.append('file', new Blob([new Uint8Array(fileBuffer)], { type: fileType }), fileName);
-    } else if (file instanceof Blob) {
-      formData.append('file', file, options?.fileName ?? 'upload.pdf');
-    } else {
-      const fileType = options?.fileType ?? 'application/pdf';
-      formData.append('file', new Blob([new Uint8Array(file)], { type: fileType }), options?.fileName ?? 'upload.pdf');
-    }
-
-    const uploadOptions = options?.onProgress ? { onProgress: options.onProgress } : undefined;
-
-    return this.http.postMultipart('/statements', formData, { projectId }, uploadOptions);
+    return runUploadFlow({ http: this.http, resourcePath: '/statements', projectId, file, options });
   }
 
   async download(projectId: string, statementId: number): Promise<ApiResponse<StatementDownloadResult>> {

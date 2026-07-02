@@ -1,4 +1,4 @@
-import type { PaginationOptions, SseProgressEvent } from './common.js';
+import type { PaginationOptions } from './common.js';
 
 export type ExtractionId =
   | 'extract-accounting-period'
@@ -53,15 +53,12 @@ export interface ContractUploadOptions {
   fileName?: string;
   fileType?: string;
   extractions?: ExtractionId[];
-  onProgress?: (event: SseProgressEvent) => void;
 }
 
 export interface ContractUploadResult {
   staging_id: number;
-  staging_stage: string;
-  staging_done: boolean;
-  extractions_done: boolean;
-  created_at: string;
+  status: 'uploaded';
+  file_path: string;
 }
 
 export interface DownloadResult {

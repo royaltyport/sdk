@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { client, PROJECT_ID } from './setup.js';
-import type { SseProgressEvent } from '../../src/index.js';
 
 describe('Contracts (integration)', () => {
   it('lists contracts', async () => {
@@ -22,22 +21,19 @@ describe('Contracts (integration)', () => {
   describe('upload -> get -> download -> processes', () => {
     let uploadedStagingId: number;
 
-    it('uploads a contract via multipart with SSE progress', async () => {
-      // Create a minimal PDF-like file for testing
+    it('uploads a contract via the signed-URL flow', async () => {
+      // Must start with %PDF- — the API validates the real bytes at complete
       const testContent = '%PDF-1.4 test contract content for SDK integration test';
       const file = new Blob([testContent], { type: 'application/pdf' });
-
-      const progressEvents: SseProgressEvent[] = [];
 
       const { data } = await client.contracts.upload(PROJECT_ID, file, {
         fileName: 'sdk-test-contract.pdf',
         extractions: ['extract-dates', 'extract-signatures'],
-        onProgress: (event) => progressEvents.push(event),
       });
 
-      expect(data).toHaveProperty('staging_id');
       expect(typeof data.staging_id).toBe('number');
-      expect(data).toHaveProperty('created_at');
+      expect(data.status).toBe('uploaded');
+      expect(typeof data.file_path).toBe('string');
 
       uploadedStagingId = data.staging_id;
     });

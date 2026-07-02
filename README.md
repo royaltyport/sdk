@@ -84,6 +84,29 @@ const royaltyport = new Royaltyport({
 | `royaltyport.statements` | `list`, `get`, `upload`, `download`, `processes` | Statements with upload, download, and processing status |
 | `royaltyport.search()` | — | Cross-resource search |
 
+## File Uploads
+
+`upload()` accepts a file path, `Buffer`, `Uint8Array`, or `Blob`. Files must be PDFs of at most 50 MB — enforced locally before any request and re-validated server-side against the real bytes.
+
+```js
+// Statements
+const { data } = await royaltyport.statements.upload(projectId, './statement.pdf');
+console.log(data); // { staging_id: 123, status: 'uploaded', file_path: '...' }
+
+// Contracts, with optional extractions
+const { data: contract } = await royaltyport.contracts.upload(projectId, './contract.pdf', {
+  extractions: ['extract-dates', 'extract-royalties'],
+});
+```
+
+Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `processes()` for staging progress instead:
+
+```js
+const { data: status } = await royaltyport.statements.processes(projectId, data.staging_id);
+```
+
+If the flow fails after the file bytes reached storage, the SDK throws `RoyaltyportUploadError` with a `step` (`'put'` or `'complete'`) and the `stagingId`. On a `'complete'` failure the bytes are already stored — completion can be re-run manually via `POST /v1/{statements|contracts}/uploads/complete` with that `stagingId`.
+
 ## Error Handling
 
 ```js

@@ -13,16 +13,18 @@ describe('Statements (integration)', () => {
   describe('upload -> get -> processes', () => {
     let uploadedStagingId: number;
 
-    it('uploads a statement via multipart', async () => {
-      const testContent = 'artist,track,revenue\nTest Artist,Test Track,100.00';
+    it('uploads a statement via the signed-URL flow', async () => {
+      // Must start with %PDF- — the API validates the real bytes at complete
+      const testContent = '%PDF-1.4 test statement content for SDK integration test';
       const file = new Blob([testContent], { type: 'application/pdf' });
 
       const { data } = await client.statements.upload(PROJECT_ID, file, {
         fileName: 'sdk-test-statement.pdf',
       });
 
-      expect(data).toHaveProperty('staging_id');
       expect(typeof data.staging_id).toBe('number');
+      expect(data.status).toBe('uploaded');
+      expect(typeof data.file_path).toBe('string');
 
       uploadedStagingId = data.staging_id;
     });

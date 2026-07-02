@@ -218,25 +218,19 @@ console.log(processes.staging_done, processes.extraction_done);
 
 ### Contract Upload
 
+Uploads are PDF-only, max 50 MB. Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload — the result is `{ staging_id, status: 'uploaded', file_path }`. Poll `processes()` for staging/extraction progress.
+
 ```ts
 // Upload from file path
 const { data: result } = await royaltyport.contracts.upload('project_id', './contract.pdf', {
-  extractions: ['extract-royalties', 'extract-splits', 'extract-entities'],
+  extractions: ['extract-royalties', 'extract-splits', 'extract-dates'],
 });
-console.log(result.staging_id);
+console.log(result.staging_id, result.status); // 123 'uploaded'
 
-// Upload from Buffer/Uint8Array
+// Upload from Buffer/Uint8Array/Blob
 const { data: result } = await royaltyport.contracts.upload('project_id', fileBuffer, {
   fileName: 'contract.pdf',
   extractions: ['extract-royalties'],
-});
-
-// Upload with progress tracking
-const { data: result } = await royaltyport.contracts.upload('project_id', './contract.pdf', {
-  extractions: ['extract-royalties'],
-  onProgress: (event) => {
-    console.log(`${event.percent}% (${event.bytesUploaded}/${event.bytesTotal})`);
-  },
 });
 ```
 
@@ -258,10 +252,9 @@ for (const statement of data.items) {
 // Get a single statement
 const { data: statement } = await royaltyport.statements.get('project_id', statementId);
 
-// Upload a statement
-const { data: result } = await royaltyport.statements.upload('project_id', './statement.pdf', {
-  onProgress: (event) => console.log(`${event.percent}%`),
-});
+// Upload a statement (PDF-only, max 50 MB)
+const { data: result } = await royaltyport.statements.upload('project_id', './statement.pdf');
+console.log(result.staging_id, result.status); // 123 'uploaded'
 
 // Download a statement
 const { data: download } = await royaltyport.statements.download('project_id', statementId);
@@ -297,6 +290,7 @@ import {
   RoyaltyportAuthenticationError,
   RoyaltyportRateLimitError,
   RoyaltyportValidationError,
+  RoyaltyportUploadError,
   RoyaltyportError,
 } from '@royaltyport/sdk';
 
@@ -309,7 +303,12 @@ try {
     // 429 — rate limited (auto-retried up to 3x before throwing)
     console.log(error.retryAfter); // seconds until reset
   } else if (error instanceof RoyaltyportValidationError) {
-    // 400 — invalid request parameters
+    // 400 — invalid request parameters (error.fields has per-field messages when available)
+  } else if (error instanceof RoyaltyportUploadError) {
+    // Upload flow failure: error.step is 'put' or 'complete'.
+    // On 'complete' the file bytes are already in storage — re-run completion
+    // via POST /v1/{contracts|statements}/uploads/complete with error.stagingId.
+    console.log(error.step, error.stagingId);
   } else if (error instanceof RoyaltyportError) {
     // Other API error
     console.log(error.status, error.message);
@@ -382,7 +381,7 @@ while (true) {
 
 ```ts
 const { data: upload } = await royaltyport.contracts.upload(projectId, './contract.pdf', {
-  extractions: ['extract-royalties', 'extract-splits', 'extract-entities'],
+  extractions: ['extract-royalties', 'extract-splits', 'extract-dates'],
 });
 
 // Poll processing status

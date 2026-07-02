@@ -4,7 +4,6 @@ export type {
   PaginatedResult,
   RateLimit,
   ApiResponse,
-  SseProgressEvent,
 } from './common.js';
 
 export type {

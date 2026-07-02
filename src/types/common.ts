@@ -31,9 +31,3 @@ export interface ApiResponse<T> {
   data: T;
   rateLimit: RateLimit;
 }
-
-export interface SseProgressEvent {
-  bytesUploaded: number;
-  bytesTotal: number;
-  percent: number;
-}

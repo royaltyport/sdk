@@ -208,6 +208,31 @@ describe('HttpClient', () => {
 
       await expect(client.get('/artists')).rejects.toThrow('Something went wrong');
     });
+
+    it('flattens Zod fieldErrors into message and exposes fields', async () => {
+      const fetchFn = vi.fn().mockResolvedValue(
+        mockResponse(
+          { error: { fileSize: ['fileSize exceeds maximum of 52428800 bytes'], fileName: ['Required'] } },
+          { status: 400 },
+        ),
+      );
+      const client = createClient(fetchFn);
+
+      try {
+        await client.get('/artists');
+        expect.unreachable('should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(RoyaltyportValidationError);
+        const validationErr = err as RoyaltyportValidationError;
+        expect(validationErr.message).toBe(
+          'fileSize: fileSize exceeds maximum of 52428800 bytes; fileName: Required',
+        );
+        expect(validationErr.fields).toEqual({
+          fileSize: ['fileSize exceeds maximum of 52428800 bytes'],
+          fileName: ['Required'],
+        });
+      }
+    });
   });
 
   describe('retries', () => {
@@ -243,125 +268,93 @@ describe('HttpClient', () => {
     });
   });
 
-  describe('SSE parsing', () => {
-    it('parses progress and complete events', async () => {
-      const sseBody = [
-        'event: progress\ndata: {"bytesUploaded":500,"bytesTotal":1000,"percent":50}\n\n',
-        'event: progress\ndata: {"bytesUploaded":1000,"bytesTotal":1000,"percent":100}\n\n',
-        'event: complete\ndata: {"data":{"staging_id":42}}\n\n',
-      ].join('');
-
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(sseBody));
-          controller.close();
-        },
-      });
-
-      const res = new Response(stream, {
-        status: 200,
-        headers: { 'content-type': 'text/event-stream' },
-      });
-
-      const fetchFn = vi.fn().mockResolvedValue(res);
-      const client = createClient(fetchFn);
-
-      const progressEvents: unknown[] = [];
-      const result = await client.postMultipart(
-        '/contracts',
-        new FormData(),
-        { projectId: 'abc' },
-        { onProgress: (e) => progressEvents.push(e) },
-      );
-
-      expect(progressEvents).toHaveLength(2);
-      expect(progressEvents[0]).toEqual({ bytesUploaded: 500, bytesTotal: 1000, percent: 50 });
-      expect(progressEvents[1]).toEqual({ bytesUploaded: 1000, bytesTotal: 1000, percent: 100 });
-      expect(result.data).toEqual({ staging_id: 42 });
-    });
-
-    it('throws on SSE error event', async () => {
-      const sseBody = 'event: error\ndata: {"message":"Upload failed"}\n\n';
-
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(sseBody));
-          controller.close();
-        },
-      });
-
-      const res = new Response(stream, {
-        status: 200,
-        headers: { 'content-type': 'text/event-stream' },
-      });
-
-      const fetchFn = vi.fn().mockResolvedValue(res);
-      const client = createClient(fetchFn);
+  describe('POST with retryNetworkErrors: false', () => {
+    it('does not retry a network error', async () => {
+      const fetchFn = vi.fn().mockRejectedValue(new TypeError('fetch failed'));
+      const client = createClient(fetchFn, { retryDelay: 0 });
 
       await expect(
-        client.postMultipart('/contracts', new FormData(), {}, { onProgress: () => {} }),
-      ).rejects.toThrow('Upload failed');
+        client.post('/contracts/uploads/complete', { stagingId: 1 }, {}, { retryNetworkErrors: false }),
+      ).rejects.toThrow('fetch failed');
+      expect(fetchFn).toHaveBeenCalledTimes(1);
     });
 
-    it('throws when stream ends without complete event', async () => {
-      const sseBody = 'event: progress\ndata: {"bytesUploaded":500,"bytesTotal":1000,"percent":50}\n\n';
-
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(sseBody));
-          controller.close();
-        },
+    it('still retries 429 and 5xx responses', async () => {
+      let callCount = 0;
+      const fetchFn = vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve(mockResponse({ error: { message: 'Rate limited' } }, { status: 429 }));
+        }
+        return Promise.resolve(mockResponse({ data: { staging_id: 1, status: 'uploaded' } }));
       });
+      const client = createClient(fetchFn, { retryDelay: 0 });
 
-      const res = new Response(stream, {
-        status: 200,
-        headers: { 'content-type': 'text/event-stream' },
-      });
+      const result = await client.post('/contracts/uploads/complete', { stagingId: 1 }, {}, { retryNetworkErrors: false });
 
-      const fetchFn = vi.fn().mockResolvedValue(res);
-      const client = createClient(fetchFn);
-
-      await expect(
-        client.postMultipart('/contracts', new FormData(), {}, { onProgress: () => {} }),
-      ).rejects.toThrow('Stream ended without a complete event');
+      expect(result.data).toEqual({ staging_id: 1, status: 'uploaded' });
+      expect(fetchFn).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('postMultipart without SSE', () => {
-    it('returns parsed response when no onProgress', async () => {
-      const fetchFn = vi.fn().mockResolvedValue(
-        mockResponse({ data: { staging_id: 42 } }, { status: 201 }),
-      );
+  describe('putExternal', () => {
+    it('passes the absolute URL through untouched and sends no Authorization header', async () => {
+      const fetchFn = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
       const client = createClient(fetchFn);
 
-      const result = await client.postMultipart('/contracts', new FormData(), { projectId: 'abc' });
+      await client.putExternal('https://storage.example.com/sign/abc?token=xyz', {
+        headers: { 'content-type': 'application/pdf', 'x-upsert': 'true' },
+        body: new Uint8Array([1, 2, 3]),
+      });
 
-      expect(result.data).toEqual({ staging_id: 42 });
-      const init = fetchFn.mock.calls[0]![1] as RequestInit;
-      expect((init.headers as Record<string, string>)['Accept']).toBeUndefined();
+      const [url, init] = fetchFn.mock.calls[0]! as [string, RequestInit];
+      expect(url).toBe('https://storage.example.com/sign/abc?token=xyz');
+      expect(init.method).toBe('PUT');
+      const headers = init.headers as Record<string, string>;
+      expect(headers['Authorization']).toBeUndefined();
+      expect(headers['content-type']).toBe('application/pdf');
+      expect(headers['x-upsert']).toBe('true');
     });
 
-    it('sends Accept: text/event-stream when onProgress is set', async () => {
-      const sseBody = 'event: complete\ndata: {"data":{"staging_id":1}}\n\n';
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(sseBody));
-          controller.close();
-        },
+    it('retries transient failures and re-sends the body', async () => {
+      const body = new Uint8Array([1, 2, 3]);
+      let callCount = 0;
+      const fetchFn = vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve(new Response('storage error', { status: 500 }));
+        }
+        return Promise.resolve(new Response('{}', { status: 200 }));
+      });
+      const client = createClient(fetchFn, { retryDelay: 0 });
+
+      await client.putExternal('https://storage.example.com/sign/abc', {
+        headers: { 'content-type': 'application/pdf' },
+        body,
       });
 
-      const res = new Response(stream, {
-        status: 200,
-        headers: { 'content-type': 'text/event-stream' },
-      });
+      expect(fetchFn).toHaveBeenCalledTimes(2);
+      expect((fetchFn.mock.calls[1]![1] as RequestInit).body).toBe(body);
+    });
 
-      const fetchFn = vi.fn().mockResolvedValue(res);
-      const client = createClient(fetchFn);
+    it('throws with the storage status on persistent non-2xx', async () => {
+      const fetchFn = vi.fn().mockImplementation(() =>
+        Promise.resolve(new Response('access denied', { status: 403 })),
+      );
+      const client = createClient(fetchFn, { retryDelay: 0 });
 
-      await client.postMultipart('/contracts', new FormData(), {}, { onProgress: () => {} });
-
-      const init = fetchFn.mock.calls[0]![1] as RequestInit;
-      expect((init.headers as Record<string, string>)['Accept']).toBe('text/event-stream');
+      try {
+        await client.putExternal('https://storage.example.com/sign/abc', {
+          headers: { 'content-type': 'application/pdf' },
+          body: new Uint8Array([1]),
+        });
+        expect.unreachable('should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(RoyaltyportError);
+        expect((err as RoyaltyportError).status).toBe(403);
+        expect((err as RoyaltyportError).message).toBe('access denied');
+      }
+      expect(fetchFn).toHaveBeenCalledTimes(1);
     });
   });
 });

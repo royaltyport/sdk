@@ -1,4 +1,4 @@
-import type { ApiResponse, RateLimit, SseProgressEvent } from './types/common.js';
+import type { ApiResponse, RateLimit } from './types/common.js';
 import {
   RoyaltyportError,
   RoyaltyportAuthenticationError,
@@ -19,8 +19,12 @@ export interface HttpClientOptions {
   retryDelay?: number;
 }
 
-export interface UploadOptions {
-  onProgress?: ((event: SseProgressEvent) => void) | undefined;
+export interface PostOptions {
+  /**
+   * When false, a network error (no response received) is not retried.
+   * Use for requests that trigger non-idempotent server-side work.
+   */
+  retryNetworkErrors?: boolean;
 }
 
 export class HttpClient {
@@ -44,49 +48,61 @@ export class HttpClient {
     });
   }
 
-  async post<T>(path: string, body: unknown, query?: Record<string, string | undefined>): Promise<ApiResponse<T>> {
-    const url = this.buildUrl(path, query);
-    return this.requestWithRetry<T>(url, {
-      method: 'POST',
-      headers: this.buildHeaders(),
-      body: JSON.stringify(body),
-    });
-  }
-
-  async postMultipart<T>(
+  async post<T>(
     path: string,
-    formData: FormData,
+    body: unknown,
     query?: Record<string, string | undefined>,
-    options?: UploadOptions,
+    options?: PostOptions,
   ): Promise<ApiResponse<T>> {
     const url = this.buildUrl(path, query);
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${this.token}`,
-    };
+    return this.requestWithRetry<T>(
+      url,
+      {
+        method: 'POST',
+        headers: this.buildHeaders(),
+        body: JSON.stringify(body),
+      },
+      options?.retryNetworkErrors ?? true,
+    );
+  }
 
-    if (options?.onProgress) {
-      headers['Accept'] = 'text/event-stream';
+  /**
+   * PUT to an absolute external URL (e.g. a signed storage URL). Bypasses
+   * buildUrl and sends no Authorization header — the URL authorizes itself.
+   * Retries like get/post; callers must only pass idempotent requests.
+   */
+  async putExternal(url: string, opts: { headers: Record<string, string>; body: BodyInit }): Promise<void> {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= API_MAX_RETRIES; attempt++) {
+      try {
+        const res = await this._fetch(url, {
+          method: 'PUT',
+          headers: opts.headers,
+          body: opts.body,
+        });
+
+        if (res.ok) return;
+
+        if (attempt < API_MAX_RETRIES && (res.status === 429 || res.status >= 500)) {
+          await sleep(this.retryDelay(attempt, res.headers));
+          continue;
+        }
+
+        const text = await res.text();
+        throw new RoyaltyportError(text || `Upload failed with status ${res.status}`, res.status);
+      } catch (err) {
+        if (err instanceof RoyaltyportError) throw err;
+
+        lastError = err;
+        if (attempt < API_MAX_RETRIES) {
+          await sleep(this.retryDelay(attempt));
+          continue;
+        }
+      }
     }
 
-    const res = await this._fetch(url, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-
-    const rateLimit = this.parseRateLimit(res.headers);
-
-    if (!res.ok) {
-      this.throwError(await this.parseBody(res), res.status, rateLimit);
-    }
-
-    if (options?.onProgress && res.headers.get('content-type')?.includes('text/event-stream')) {
-      const data = await this.parseSseResponse<T>(res, options.onProgress);
-      return { data, rateLimit };
-    }
-
-    const body = await this.parseBody(res);
-    return { data: body.data as T, rateLimit };
+    throw lastError;
   }
 
   private buildUrl(path: string, query?: Record<string, string | undefined>): string {
@@ -129,15 +145,27 @@ export class HttpClient {
 
   private throwError(body: Record<string, unknown>, status: number, rateLimit: RateLimit): never {
     const error = body.error as Record<string, unknown> | string | undefined;
+
+    // Zod validation failures arrive as { error: { <field>: ["msg", …] } } with no .message
+    let fields: Record<string, string[]> | undefined;
+    if (typeof error === 'object' && error !== null && error.message === undefined) {
+      fields = error as Record<string, string[]>;
+    }
+
     const message =
-      (typeof error === 'object' ? (error?.message as string) : undefined) ??
+      (typeof error === 'object' ? (error?.message as string | undefined) : undefined) ??
+      (fields
+        ? Object.entries(fields)
+            .map(([field, messages]) => `${field}: ${(Array.isArray(messages) ? messages : [messages]).join(', ')}`)
+            .join('; ')
+        : undefined) ??
       (typeof error === 'string' ? error : undefined) ??
       (body.message as string | undefined) ??
       `Request failed with status ${status}`;
 
     switch (status) {
       case 400:
-        throw new RoyaltyportValidationError(message, rateLimit);
+        throw new RoyaltyportValidationError(message, rateLimit, fields);
       case 401:
         throw new RoyaltyportAuthenticationError(message, rateLimit);
       case 429:
@@ -147,7 +175,7 @@ export class HttpClient {
     }
   }
 
-  private async requestWithRetry<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
+  private async requestWithRetry<T>(url: string, init: RequestInit, retryNetworkErrors = true): Promise<ApiResponse<T>> {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= API_MAX_RETRIES; attempt++) {
@@ -173,10 +201,12 @@ export class HttpClient {
         if (err instanceof RoyaltyportError) throw err;
 
         lastError = err;
-        if (attempt < API_MAX_RETRIES) {
+        if (retryNetworkErrors && attempt < API_MAX_RETRIES) {
           await sleep(this.retryDelay(attempt));
           continue;
         }
+
+        throw lastError;
       }
     }
 
@@ -197,56 +227,6 @@ export class HttpClient {
     return Math.min(delay + jitter, API_MAX_RETRY_DELAY);
   }
 
-  private async parseSseResponse<T>(res: Response, onProgress?: (event: SseProgressEvent) => void): Promise<T> {
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let result: T | null = null;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split('\n\n');
-      buffer = parts.pop()!;
-
-      for (const part of parts) {
-        let event = 'message';
-        let data = '';
-
-        for (const line of part.split('\n')) {
-          if (line.startsWith('event: ')) event = line.slice(7);
-          else if (line.startsWith('data: ')) data = line.slice(6);
-        }
-
-        if (!data) continue;
-
-        const parsed = JSON.parse(data) as Record<string, unknown>;
-
-        if (event === 'error') {
-          throw new RoyaltyportError(
-            (parsed.message as string) ?? 'Request failed',
-            500,
-          );
-        }
-
-        if (event === 'progress') {
-          onProgress?.(parsed as unknown as SseProgressEvent);
-        }
-
-        if (event === 'complete') {
-          result = (parsed.data ?? parsed) as T;
-        }
-      }
-    }
-
-    if (result === null) {
-      throw new RoyaltyportError('Stream ended without a complete event', 500);
-    }
-
-    return result;
-  }
 }
 
 function sleep(ms: number): Promise<void> {

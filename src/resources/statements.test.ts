@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Statements } from './statements.js';
 import { createMockHttp } from './test-helpers.js';
 
@@ -25,19 +25,42 @@ describe('Statements', () => {
     expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1' });
   });
 
-  it('upload sends FormData via postMultipart', async () => {
+  it('upload runs the mint -> put -> complete flow', async () => {
     const http = createMockHttp();
+    const rateLimit = { limit: 100, remaining: 99, reset: 0 };
+    vi.mocked(http.post)
+      .mockResolvedValueOnce({
+        data: { staging_id: 123, upload_url: 'https://storage.example.com/signed', file_path: 'proj-1/statements_staging/abc' },
+        rateLimit,
+      })
+      .mockResolvedValueOnce({ data: { staging_id: 123, status: 'uploaded' }, rateLimit });
     const statements = new Statements(http);
 
-    const blob = new Blob(['csv data'], { type: 'text/csv' });
-    await statements.upload('proj-1', blob, { fileName: 'report.csv' });
+    const blob = new Blob(['%PDF-1.4 data'], { type: 'application/pdf' });
+    const result = await statements.upload('proj-1', blob, { fileName: 'report.pdf' });
 
-    expect(http.postMultipart).toHaveBeenCalledWith(
-      '/statements',
-      expect.any(FormData),
+    expect(http.post).toHaveBeenNthCalledWith(
+      1,
+      '/statements/uploads',
+      { fileName: 'report.pdf', fileType: 'application/pdf', fileSize: 13, fileExtension: 'pdf' },
       { projectId: 'proj-1' },
-      undefined,
     );
+    expect(http.putExternal).toHaveBeenCalledWith('https://storage.example.com/signed', {
+      headers: { 'content-type': 'application/pdf', 'x-upsert': 'true' },
+      body: expect.any(Uint8Array),
+    });
+    expect(http.post).toHaveBeenNthCalledWith(
+      2,
+      '/statements/uploads/complete',
+      { stagingId: 123 },
+      { projectId: 'proj-1' },
+      { retryNetworkErrors: false },
+    );
+    expect(result.data).toEqual({
+      staging_id: 123,
+      status: 'uploaded',
+      file_path: 'proj-1/statements_staging/abc',
+    });
   });
 
   it('download calls correct path', async () => {

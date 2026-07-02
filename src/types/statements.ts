@@ -1,4 +1,4 @@
-import type { PaginationOptions, SseProgressEvent } from './common.js';
+import type { PaginationOptions } from './common.js';
 
 export interface Statement {
   id: number;
@@ -15,14 +15,12 @@ export interface StatementListOptions extends PaginationOptions {}
 export interface StatementUploadOptions {
   fileName?: string;
   fileType?: string;
-  onProgress?: (event: SseProgressEvent) => void;
 }
 
 export interface StatementUploadResult {
   staging_id: number;
-  staging_stage: string;
-  staging_done: boolean;
-  created_at: string;
+  status: 'uploaded';
+  file_path: string;
 }
 
 export interface StatementDownloadResult {
