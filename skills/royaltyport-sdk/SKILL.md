@@ -247,7 +247,7 @@ const { data } = await royaltyport.statements.list('project_id', {
 });
 
 for (const statement of data.items) {
-  console.log(statement.file_name, statement.processing_status, statement.currency_royalty);
+  console.log(statement.file_name, statement.extraction_stage, statement.currency_royalty);
 }
 
 // Get a single statement with revenue totals, summary, and an optional detailed CSV
@@ -264,7 +264,7 @@ console.log(result.staging_id, result.status); // 123 'uploaded'
 // Download a statement
 const { data: download } = await royaltyport.statements.download('project_id', statementId);
 
-// Check processing status
+// Check extraction status
 const { data: processes } = await royaltyport.statements.processes('project_id', statementId);
 ```
 

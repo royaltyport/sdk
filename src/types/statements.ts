@@ -13,7 +13,7 @@ export interface Statement {
   statement_subtype?: string;
   statement_producer?: string;
   statement_version?: string;
-  processing_status?: string;
+  extraction_stage: StatementExtractionStage;
   upload_status?: string;
   approval_status?: string;
   has_revenues?: boolean;
@@ -33,7 +33,14 @@ export interface Statement {
   detailed_error?: string | null;
 }
 
-export type StatementProcessingStatus = 'processed' | 'processing' | 'errors' | 'failed' | 'warnings';
+export type StatementExtractionStage =
+  | 'queued'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'paused'
+  | 'timed_out'
+  | 'skipped';
 
 export interface StatementFinancials {
   currency: string;
@@ -59,7 +66,7 @@ export interface StatementDetailedExport {
 
 export interface StatementListOptions extends PaginationOptions {
   stagingIds?: number[];
-  processingStatus?: StatementProcessingStatus;
+  extractionStage?: StatementExtractionStage;
 }
 
 export interface StatementGetOptions {
@@ -88,14 +95,14 @@ export interface StatementProcesses {
   staging_id: number;
   statement_id: number | null;
   staging_done: boolean;
-  processing_done: boolean;
+  extraction_done: boolean;
   staging_processes: {
     stage: string;
     info: Record<string, { info: Record<string, unknown>; status: string }>;
   };
-  processing_processes: {
-    status: string;
-    stage: number;
+  extraction_processes: {
+    stage: StatementExtractionStage;
+    step: number;
     remarks: Record<string, unknown>;
   } | null;
 }

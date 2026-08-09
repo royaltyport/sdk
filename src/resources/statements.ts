@@ -18,7 +18,7 @@ export class Statements extends BaseResource {
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
       stagingIds: options?.stagingIds?.join(','),
-      processingStatus: options?.processingStatus,
+      extractionStage: options?.extractionStage,
     });
   }
 

@@ -14,22 +14,22 @@ describe('Statements', () => {
       page: '2',
       perPage: '30',
       stagingIds: undefined,
-      processingStatus: undefined,
+      extractionStage: undefined,
     });
   });
 
-  it('list passes staging and processing filters', async () => {
+  it('list passes staging and extraction filters', async () => {
     const http = createMockHttp();
     const statements = new Statements(http);
 
-    await statements.list('proj-1', { stagingIds: [10, 11], processingStatus: 'warnings' });
+    await statements.list('proj-1', { stagingIds: [10, 11], extractionStage: 'completed' });
 
     expect(http.get).toHaveBeenCalledWith('/statements', {
       projectId: 'proj-1',
       page: undefined,
       perPage: undefined,
       stagingIds: '10,11',
-      processingStatus: 'warnings',
+      extractionStage: 'completed',
     });
   });
 

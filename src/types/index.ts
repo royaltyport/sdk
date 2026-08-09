@@ -78,7 +78,7 @@ export type {
   StatementDetailedExport,
   StatementListOptions,
   StatementGetOptions,
-  StatementProcessingStatus,
+  StatementExtractionStage,
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,

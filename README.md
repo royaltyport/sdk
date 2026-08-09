@@ -81,7 +81,7 @@ const royaltyport = new Royaltyport({
 | `royaltyport.entities` | `list`, `get` | Entities (with merge history) |
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
 | `royaltyport.contracts` | `list`, `get`, `upload`, `download`, `processes` | Contracts with upload, download, and processing status |
-| `royaltyport.statements` | `list`, `get`, `upload`, `download`, `processes` | Statements with upload, download, and processing status |
+| `royaltyport.statements` | `list`, `get`, `upload`, `download`, `processes` | Statements with upload, download, and extraction status |
 | `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
 | `royaltyport.search()` | — | Cross-resource search |
 
