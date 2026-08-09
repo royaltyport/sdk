@@ -21,10 +21,10 @@ export interface HttpClientOptions {
 
 export interface PostOptions {
   /**
-   * When false, a network error (no response received) is not retried.
-   * Use for requests that trigger non-idempotent server-side work.
+   * When false, neither response nor network failures are retried.
+   * Use for requests that create state without an idempotency key.
    */
-  retryNetworkErrors?: boolean;
+  retry?: boolean;
 }
 
 export class HttpClient {
@@ -62,7 +62,7 @@ export class HttpClient {
         headers: this.buildHeaders(),
         body: JSON.stringify(body),
       },
-      options?.retryNetworkErrors ?? true,
+      options?.retry ?? true,
     );
   }
 
@@ -175,7 +175,7 @@ export class HttpClient {
     }
   }
 
-  private async requestWithRetry<T>(url: string, init: RequestInit, retryNetworkErrors = true): Promise<ApiResponse<T>> {
+  private async requestWithRetry<T>(url: string, init: RequestInit, retry = true): Promise<ApiResponse<T>> {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= API_MAX_RETRIES; attempt++) {
@@ -186,7 +186,7 @@ export class HttpClient {
         if (!res.ok) {
           const body = await this.parseBody(res);
 
-          if (attempt < API_MAX_RETRIES && (res.status === 429 || res.status >= 500)) {
+          if (retry && attempt < API_MAX_RETRIES && (res.status === 429 || res.status >= 500)) {
             const delay = this.retryDelay(attempt, res.headers);
             await sleep(delay);
             continue;
@@ -201,7 +201,7 @@ export class HttpClient {
         if (err instanceof RoyaltyportError) throw err;
 
         lastError = err;
-        if (retryNetworkErrors && attempt < API_MAX_RETRIES) {
+        if (retry && attempt < API_MAX_RETRIES) {
           await sleep(this.retryDelay(attempt));
           continue;
         }

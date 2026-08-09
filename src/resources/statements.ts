@@ -2,6 +2,7 @@ import type { ApiResponse, PaginatedResult } from '../types/common.js';
 import type {
   Statement,
   StatementListOptions,
+  StatementGetOptions,
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,
@@ -16,11 +17,16 @@ export class Statements extends BaseResource {
       projectId,
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
+      stagingIds: options?.stagingIds?.join(','),
+      processingStatus: options?.processingStatus,
     });
   }
 
-  async get(projectId: string, statementId: number): Promise<ApiResponse<Statement>> {
-    return this.http.get(`/statements/${statementId}`, { projectId });
+  async get(projectId: string, statementId: number, options?: StatementGetOptions): Promise<ApiResponse<Statement>> {
+    return this.http.get(`/statements/${statementId}`, {
+      projectId,
+      detailed: options?.detailed?.toString(),
+    });
   }
 
   async upload(
@@ -35,7 +41,7 @@ export class Statements extends BaseResource {
     return this.http.get(`/statements/${statementId}/download`, { projectId });
   }
 
-  async processes(projectId: string, statementId: number): Promise<ApiResponse<StatementProcesses>> {
-    return this.http.get(`/statements/${statementId}/processes`, { projectId });
+  async processes(projectId: string, id: number): Promise<ApiResponse<StatementProcesses>> {
+    return this.http.get(`/statements/${id}/processes`, { projectId });
   }
 }

@@ -268,32 +268,27 @@ describe('HttpClient', () => {
     });
   });
 
-  describe('POST with retryNetworkErrors: false', () => {
+  describe('POST with retry: false', () => {
     it('does not retry a network error', async () => {
       const fetchFn = vi.fn().mockRejectedValue(new TypeError('fetch failed'));
       const client = createClient(fetchFn, { retryDelay: 0 });
 
       await expect(
-        client.post('/contracts/uploads/complete', { stagingId: 1 }, {}, { retryNetworkErrors: false }),
+        client.post('/contracts/uploads/complete', { stagingId: 1 }, {}, { retry: false }),
       ).rejects.toThrow('fetch failed');
       expect(fetchFn).toHaveBeenCalledTimes(1);
     });
 
-    it('still retries 429 and 5xx responses', async () => {
-      let callCount = 0;
-      const fetchFn = vi.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.resolve(mockResponse({ error: { message: 'Rate limited' } }, { status: 429 }));
-        }
-        return Promise.resolve(mockResponse({ data: { staging_id: 1, status: 'uploaded' } }));
-      });
+    it('does not retry 429 or 5xx responses', async () => {
+      const fetchFn = vi.fn().mockResolvedValue(
+        mockResponse({ error: { message: 'Rate limited' } }, { status: 429 }),
+      );
       const client = createClient(fetchFn, { retryDelay: 0 });
 
-      const result = await client.post('/contracts/uploads/complete', { stagingId: 1 }, {}, { retryNetworkErrors: false });
-
-      expect(result.data).toEqual({ staging_id: 1, status: 'uploaded' });
-      expect(fetchFn).toHaveBeenCalledTimes(2);
+      await expect(
+        client.post('/contracts/uploads/complete', { stagingId: 1 }, {}, { retry: false }),
+      ).rejects.toThrow(RoyaltyportRateLimitError);
+      expect(fetchFn).toHaveBeenCalledTimes(1);
     });
   });
 

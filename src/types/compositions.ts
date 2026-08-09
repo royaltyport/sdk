@@ -3,8 +3,12 @@ import type { PaginationOptions } from './common.js';
 export interface Composition {
   id: number;
   name: string;
-  iswc?: string;
-  writers: CompositionWriter[];
+  type?: string;
+  writers?: unknown[];
+  artists?: unknown[];
+  creators: CompositionWriter[];
+  created_at: string;
+  updated_at: string;
   products?: CompositionProduct[];
 }
 
@@ -17,6 +21,7 @@ export interface CompositionProduct {
   name: string;
   upc: string;
   release_date?: string;
+  artists?: unknown[];
   store: string;
 }
 

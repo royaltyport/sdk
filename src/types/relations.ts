@@ -5,6 +5,7 @@ export interface Relation {
   name: string;
   email?: string;
   phone?: string;
+  department?: string;
   internal_uuid: string;
   created_at: string;
   updated_at: string;

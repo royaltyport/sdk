@@ -21,7 +21,7 @@ export class Contracts extends BaseResource {
     });
   }
 
-  async get(projectId: string, contractId: number, options?: ContractGetOptions): Promise<ApiResponse<Contract>> {
+  async get(projectId: string, contractId: number | string, options?: ContractGetOptions): Promise<ApiResponse<Contract>> {
     return this.http.get(`/contracts/${contractId}`, {
       projectId,
       includes: options?.includes?.join(','),
@@ -36,11 +36,11 @@ export class Contracts extends BaseResource {
     return runUploadFlow({ http: this.http, resourcePath: '/contracts', projectId, file, options });
   }
 
-  async download(projectId: string, contractId: number): Promise<ApiResponse<DownloadResult>> {
+  async download(projectId: string, contractId: number | string): Promise<ApiResponse<DownloadResult>> {
     return this.http.get(`/contracts/${contractId}/download`, { projectId });
   }
 
-  async processes(projectId: string, contractId: number): Promise<ApiResponse<ContractProcesses>> {
-    return this.http.get(`/contracts/${contractId}/processes`, { projectId });
+  async processes(projectId: string, id: number): Promise<ApiResponse<ContractProcesses>> {
+    return this.http.get(`/contracts/${id}/processes`, { projectId });
   }
 }

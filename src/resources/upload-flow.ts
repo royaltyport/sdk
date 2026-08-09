@@ -107,6 +107,7 @@ export async function runUploadFlow({
       ...(options?.extractions && { extractions: options.extractions }),
     },
     { projectId },
+    { retry: false },
   );
 
   const { staging_id, upload_url, file_path } = mint.data;
@@ -132,7 +133,7 @@ export async function runUploadFlow({
       `${resourcePath}/uploads/complete`,
       { stagingId: staging_id },
       { projectId },
-      { retryNetworkErrors: false },
+      { retry: false },
     );
   } catch (err) {
     const status = err instanceof RoyaltyportError ? err.status : 0;

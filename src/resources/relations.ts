@@ -12,7 +12,7 @@ export class Relations extends BaseResource {
     });
   }
 
-  async get(projectId: string, relationId: number, options?: RelationGetOptions): Promise<ApiResponse<Relation>> {
+  async get(projectId: string, relationId: number | string, options?: RelationGetOptions): Promise<ApiResponse<Relation>> {
     return this.http.get(`/relations/${relationId}`, {
       projectId,
       includeMerged: options?.includeMerged?.toString(),

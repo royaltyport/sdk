@@ -27,4 +27,15 @@ describe('Search (integration)', () => {
 
     expect(data).toHaveProperty('recordings');
   });
+
+  it('searches governed project knowledge', async () => {
+    const { data } = await client.knowledge.search(PROJECT_ID, 'policy', { limit: 5 });
+
+    expect(Array.isArray(data.results)).toBe(true);
+    expect(data.freshness).toHaveProperty('last_indexed_at');
+    for (const item of data.results) {
+      expect(Array.isArray(item.claims)).toBe(true);
+      expect(Array.isArray(item.relationships)).toBe(true);
+    }
+  });
 });

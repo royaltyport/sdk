@@ -12,7 +12,7 @@ export class Compositions extends BaseResource {
     });
   }
 
-  async get(projectId: string, compositionId: number, options?: CompositionGetOptions): Promise<ApiResponse<Composition>> {
+  async get(projectId: string, compositionId: number | string, options?: CompositionGetOptions): Promise<ApiResponse<Composition>> {
     return this.http.get(`/compositions/${compositionId}`, {
       projectId,
       includeProducts: options?.includeProducts?.toString(),

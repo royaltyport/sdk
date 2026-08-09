@@ -13,6 +13,23 @@ describe('Statements', () => {
       projectId: 'proj-1',
       page: '2',
       perPage: '30',
+      stagingIds: undefined,
+      processingStatus: undefined,
+    });
+  });
+
+  it('list passes staging and processing filters', async () => {
+    const http = createMockHttp();
+    const statements = new Statements(http);
+
+    await statements.list('proj-1', { stagingIds: [10, 11], processingStatus: 'warnings' });
+
+    expect(http.get).toHaveBeenCalledWith('/statements', {
+      projectId: 'proj-1',
+      page: undefined,
+      perPage: undefined,
+      stagingIds: '10,11',
+      processingStatus: 'warnings',
     });
   });
 
@@ -22,7 +39,16 @@ describe('Statements', () => {
 
     await statements.get('proj-1', 77);
 
-    expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1' });
+    expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1', detailed: undefined });
+  });
+
+  it('get requests the detailed CSV export', async () => {
+    const http = createMockHttp();
+    const statements = new Statements(http);
+
+    await statements.get('proj-1', 77, { detailed: true });
+
+    expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1', detailed: 'true' });
   });
 
   it('upload runs the mint -> put -> complete flow', async () => {
@@ -44,6 +70,7 @@ describe('Statements', () => {
       '/statements/uploads',
       { fileName: 'report.pdf', fileType: 'application/pdf', fileSize: 13, fileExtension: 'pdf' },
       { projectId: 'proj-1' },
+      { retry: false },
     );
     expect(http.putExternal).toHaveBeenCalledWith('https://storage.example.com/signed', {
       headers: { 'content-type': 'application/pdf', 'x-upsert': 'true' },
@@ -54,7 +81,7 @@ describe('Statements', () => {
       '/statements/uploads/complete',
       { stagingId: 123 },
       { projectId: 'proj-1' },
-      { retryNetworkErrors: false },
+      { retry: false },
     );
     expect(result.data).toEqual({
       staging_id: 123,

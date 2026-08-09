@@ -47,6 +47,7 @@ export type {
   EntityWriter,
   EntityRelation,
   MergedEntity,
+  EntityRole,
   EntityListOptions,
   EntityGetOptions,
 } from './entities.js';
@@ -72,7 +73,12 @@ export type {
 
 export type {
   Statement,
+  StatementFinancials,
+  StatementSummary,
+  StatementDetailedExport,
   StatementListOptions,
+  StatementGetOptions,
+  StatementProcessingStatus,
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,
@@ -81,5 +87,18 @@ export type {
 
 export type {
   SearchResult,
-  SearchMatch,
+  NamedSearchMatch,
+  RecordingSearchMatch,
+  CompositionSearchMatch,
+  ContractSearchMatch,
 } from './search.js';
+
+export type {
+  KnowledgeNodeKind,
+  KnowledgeEvidence,
+  KnowledgeClaim,
+  KnowledgeRelationship,
+  KnowledgeSearchNode,
+  KnowledgeSearchResult,
+  KnowledgeSearchOptions,
+} from './knowledge.js';
