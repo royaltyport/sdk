@@ -3,7 +3,7 @@ name: royaltyport-sdk
 description: Query and manage Royaltyport project data via the Node.js SDK. Use when working with music royalty contracts, statements, entities, artists, writers, relations, recordings, or compositions programmatically.
 metadata:
   author: royaltyport
-  version: "0.1.0"
+  version: "0.3.0"
 ---
 
 # Skill: Royaltyport SDK
@@ -145,7 +145,7 @@ const { data } = await royaltyport.compositions.list('project_id', {
 });
 
 for (const composition of data.items) {
-  console.log(composition.name, composition.iswc);
+  console.log(composition.name, composition.type);
 }
 
 // Get a single composition
@@ -162,6 +162,7 @@ const { data } = await royaltyport.entities.list('project_id', {
   page: 1,
   perPage: 50,
   includeMerged: true,
+  roles: ['assignor'],
 });
 
 for (const entity of data.items) {
@@ -246,11 +247,15 @@ const { data } = await royaltyport.statements.list('project_id', {
 });
 
 for (const statement of data.items) {
-  console.log(statement.file_name, statement.status, statement.currency);
+  console.log(statement.file_name, statement.processing_status, statement.currency_royalty);
 }
 
-// Get a single statement
-const { data: statement } = await royaltyport.statements.get('project_id', statementId);
+// Get a single statement with revenue totals, summary, and an optional detailed CSV
+const { data: statement } = await royaltyport.statements.get('project_id', statementId, {
+  detailed: true,
+});
+console.log(statement.financials?.licensor_revenue, statement.statement_summary?.summary);
+console.log(statement.detailed?.csv_url);
 
 // Upload a statement (PDF-only, max 50 MB)
 const { data: result } = await royaltyport.statements.upload('project_id', './statement.pdf');
@@ -272,15 +277,32 @@ const { data: results } = await royaltyport.search('project_id', 'search query')
 
 // Results contain matches from each resource type
 for (const match of results.artists) {
-  console.log(match.name, match.matched_keywords, match.rank);
+  console.log(match.id, match.name);
 }
 for (const match of results.contracts) {
-  console.log(match.name, match.matched_keywords, match.rank);
+  console.log(match.matched_file_name, match.matched_keywords, match.rank);
 }
 // Also: results.recordings, results.compositions, results.entities, results.writers
 ```
 
-Each match includes: `id`, `name`, `matched_keywords[]`, `is_metadata_match`, `rank`.
+Search result fields differ by resource. Artists, writers, and entities return `id` and `name`; recordings and compositions include string `matched_keywords`, metadata flags, and rank; contracts use `matched_file_name` and `is_content_match`.
+
+### Knowledge Search
+
+Search governed graph knowledge that is organization-wide or applicable to a project:
+
+```ts
+const { data } = await royaltyport.knowledge.search(
+  'project_id',
+  'distribution approval policy',
+  { limit: 5 },
+);
+
+for (const item of data.results) {
+  console.log(item.kind, item.name, item.claims, item.relationships);
+}
+console.log(data.freshness.last_indexed_at);
+```
 
 ## Error Handling
 
@@ -301,7 +323,7 @@ try {
     // 401 — invalid or expired token
   } else if (error instanceof RoyaltyportRateLimitError) {
     // 429 — rate limited (auto-retried up to 3x before throwing)
-    console.log(error.retryAfter); // seconds until reset
+    console.log(error.retryAfter); // Unix timestamp from X-RateLimit-Reset
   } else if (error instanceof RoyaltyportValidationError) {
     // 400 — invalid request parameters (error.fields has per-field messages when available)
   } else if (error instanceof RoyaltyportUploadError) {
@@ -316,7 +338,7 @@ try {
 }
 ```
 
-The SDK automatically retries `429` and `5xx` errors up to 3 times with exponential backoff and jitter.
+The SDK automatically retries `429`, `5xx`, and network failures for idempotent requests. Upload mint and completion POSTs are deliberately single-attempt because an ambiguous failure may already have changed server state.
 
 ## Common Data Access Patterns
 
@@ -401,6 +423,6 @@ while (!done) {
 - **Use `includeProducts`** on recordings and compositions to get associated products.
 - **Parallelize independent requests** with `Promise.all()` for faster data gathering.
 - **Check `total_count`** in paginated results to know when you have all records.
-- **The SDK auto-retries** on rate limits and server errors — you don't need manual retry logic.
+- **The SDK auto-retries idempotent requests** on rate limits and server errors. Do not blindly retry upload mint/completion failures.
 - **Rate-limit info** is available on every response via `rateLimit.remaining` to manage throughput.
 - **Search first** when you need to find a specific record by name — it searches across all resource types.

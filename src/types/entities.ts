@@ -43,7 +43,10 @@ export interface MergedEntity {
 
 export interface EntityListOptions extends PaginationOptions {
   includeMerged?: boolean;
+  roles?: EntityRole[];
 }
+
+export type EntityRole = 'assignee' | 'assignor';
 
 export interface EntityGetOptions {
   includeMerged?: boolean;

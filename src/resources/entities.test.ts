@@ -14,6 +14,22 @@ describe('Entities', () => {
       page: undefined,
       perPage: undefined,
       includeMerged: 'true',
+      roles: undefined,
+    });
+  });
+
+  it('list passes contract roles', async () => {
+    const http = createMockHttp();
+    const entities = new Entities(http);
+
+    await entities.list('proj-1', { roles: ['assignor', 'assignee'] });
+
+    expect(http.get).toHaveBeenCalledWith('/entities', {
+      projectId: 'proj-1',
+      page: undefined,
+      perPage: undefined,
+      includeMerged: undefined,
+      roles: 'assignor,assignee',
     });
   });
 

@@ -9,10 +9,11 @@ export class Entities extends BaseResource {
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
       includeMerged: options?.includeMerged?.toString(),
+      roles: options?.roles?.join(','),
     });
   }
 
-  async get(projectId: string, entityId: number, options?: EntityGetOptions): Promise<ApiResponse<Entity>> {
+  async get(projectId: string, entityId: number | string, options?: EntityGetOptions): Promise<ApiResponse<Entity>> {
     return this.http.get(`/entities/${entityId}`, {
       projectId,
       includeMerged: options?.includeMerged?.toString(),

@@ -82,7 +82,20 @@ const royaltyport = new Royaltyport({
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
 | `royaltyport.contracts` | `list`, `get`, `upload`, `download`, `processes` | Contracts with upload, download, and processing status |
 | `royaltyport.statements` | `list`, `get`, `upload`, `download`, `processes` | Statements with upload, download, and processing status |
+| `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
 | `royaltyport.search()` | — | Cross-resource search |
+
+```js
+const { data: knowledge } = await royaltyport.knowledge.search(
+  projectId,
+  'distribution approval policy',
+  { limit: 5 },
+);
+
+for (const item of knowledge.results) {
+  console.log(item.kind, item.name, item.claims);
+}
+```
 
 ## File Uploads
 
@@ -134,7 +147,7 @@ try {
 }
 ```
 
-The SDK automatically retries `429` and `5xx` errors up to 3 times with exponential backoff.
+The SDK automatically retries `429`, `5xx`, and network failures for idempotent requests. Upload mint and completion POSTs are not retried because an ambiguous failure may already have created or changed server state.
 
 ## TypeScript
 

@@ -35,6 +35,7 @@ export type IncludeField =
 
 export interface Contract {
   id: number;
+  internal_uuid: string;
   file_name: string;
   file_type: string;
   created_at: string;
@@ -63,7 +64,9 @@ export interface ContractUploadResult {
 
 export interface DownloadResult {
   url: string;
-  expires_at?: string;
+  fileName: string;
+  fileType: string;
+  expiresIn: number;
 }
 
 export interface ContractProcesses {
@@ -75,5 +78,12 @@ export interface ContractProcesses {
     stage: string;
     info: Record<string, { info: Record<string, unknown>; status: string }>;
   };
-  extraction_processes: Record<string, unknown> | null;
+  extraction_processes: {
+    stage: string;
+    extractions: Array<{
+      name: string;
+      status: string;
+      completed_at: string | null;
+    }>;
+  } | null;
 }

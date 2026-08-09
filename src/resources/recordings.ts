@@ -12,7 +12,7 @@ export class Recordings extends BaseResource {
     });
   }
 
-  async get(projectId: string, recordingId: number, options?: RecordingGetOptions): Promise<ApiResponse<Recording>> {
+  async get(projectId: string, recordingId: number | string, options?: RecordingGetOptions): Promise<ApiResponse<Recording>> {
     return this.http.get(`/recordings/${recordingId}`, {
       projectId,
       includeProducts: options?.includeProducts?.toString(),

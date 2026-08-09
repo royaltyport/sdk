@@ -1,16 +1,37 @@
 export interface SearchResult {
-  recordings: SearchMatch[];
-  compositions: SearchMatch[];
-  contracts: SearchMatch[];
-  entities: SearchMatch[];
-  artists: SearchMatch[];
-  writers: SearchMatch[];
+  recordings: RecordingSearchMatch[];
+  compositions: CompositionSearchMatch[];
+  contracts: ContractSearchMatch[];
+  entities: NamedSearchMatch[];
+  artists: NamedSearchMatch[];
+  writers: NamedSearchMatch[];
 }
 
-export interface SearchMatch {
+export interface NamedSearchMatch {
   id: number;
   name: string;
-  matched_keywords: string[];
+}
+
+export interface RecordingSearchMatch extends NamedSearchMatch {
+  duration_ms: number | null;
+  artists: unknown[] | null;
+  matched_keywords: string;
   is_metadata_match: boolean;
+  rank: number;
+}
+
+export interface CompositionSearchMatch extends NamedSearchMatch {
+  writers: unknown[] | null;
+  artists: unknown[] | null;
+  matched_keywords: string;
+  is_metadata_match: boolean;
+  rank: number;
+}
+
+export interface ContractSearchMatch {
+  id: number;
+  matched_file_name: string;
+  matched_keywords: string;
+  is_content_match: boolean;
   rank: number;
 }

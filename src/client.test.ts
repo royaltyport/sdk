@@ -9,6 +9,7 @@ import { Entities } from './resources/entities.js';
 import { Relations } from './resources/relations.js';
 import { Contracts } from './resources/contracts.js';
 import { Statements } from './resources/statements.js';
+import { Knowledge } from './resources/knowledge.js';
 
 function mockResponse(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -67,9 +68,14 @@ describe('Royaltyport client', () => {
       expect(rp.statements).toBeInstanceOf(Statements);
     });
 
+    it('returns Knowledge instance', () => {
+      expect(rp.knowledge).toBeInstanceOf(Knowledge);
+    });
+
     it('returns same instance on repeated access', () => {
       expect(rp.artists).toBe(rp.artists);
       expect(rp.contracts).toBe(rp.contracts);
+      expect(rp.knowledge).toBe(rp.knowledge);
     });
   });
 

@@ -67,6 +67,7 @@ describe('Contracts', () => {
       '/contracts/uploads',
       { fileName: 'test.pdf', fileType: 'application/pdf', fileSize: 12, fileExtension: 'pdf' },
       { projectId: 'proj-1' },
+      { retry: false },
     );
     expect(http.putExternal).toHaveBeenCalledWith('https://storage.example.com/signed', {
       headers: { 'content-type': 'application/pdf', 'x-upsert': 'true' },
@@ -77,7 +78,7 @@ describe('Contracts', () => {
       '/contracts/uploads/complete',
       { stagingId: 42 },
       { projectId: 'proj-1' },
-      { retryNetworkErrors: false },
+      { retry: false },
     );
     expect(result.data).toEqual({
       staging_id: 42,
@@ -101,6 +102,7 @@ describe('Contracts', () => {
       '/contracts/uploads',
       expect.objectContaining({ extractions: ['extract-royalties', 'extract-dates'] }),
       { projectId: 'proj-1' },
+      { retry: false },
     );
   });
 

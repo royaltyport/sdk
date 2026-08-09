@@ -12,7 +12,7 @@ export class Artists extends BaseResource {
     });
   }
 
-  async get(projectId: string, artistId: number, options?: ArtistGetOptions): Promise<ApiResponse<Artist>> {
+  async get(projectId: string, artistId: number | string, options?: ArtistGetOptions): Promise<ApiResponse<Artist>> {
     return this.http.get(`/artists/${artistId}`, {
       projectId,
       includeMerged: options?.includeMerged?.toString(),

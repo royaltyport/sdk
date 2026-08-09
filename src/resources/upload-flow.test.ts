@@ -222,6 +222,16 @@ describe('error mapping per step', () => {
     expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
+  it('step 1 ambiguous server failure is not retried', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(
+      jsonResponse({ error: { message: 'Internal server error' } }, 500),
+    );
+    const statements = createStatements(fetchFn);
+
+    await expect(statements.upload('proj-1', pdfBytes)).rejects.toThrow(RoyaltyportError);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
   it('step 2 (PUT) failure throws RoyaltyportUploadError with stagingId and filePath', async () => {
     const fetchFn = vi
       .fn()
