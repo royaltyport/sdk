@@ -8,6 +8,7 @@ import type {
   DownloadResult,
   ContractProcesses,
 } from '../types/contracts.js';
+import type { StagingActionResult } from '../types/staging.js';
 import { BaseResource } from './base.js';
 import { runUploadFlow } from './upload-flow.js';
 
@@ -18,6 +19,7 @@ export class Contracts extends BaseResource {
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
       includes: options?.includes?.join(','),
+      score: options?.score?.toString(),
     });
   }
 
@@ -25,6 +27,7 @@ export class Contracts extends BaseResource {
     return this.http.get(`/contracts/${contractId}`, {
       projectId,
       includes: options?.includes?.join(','),
+      score: options?.score?.toString(),
     });
   }
 
@@ -42,5 +45,9 @@ export class Contracts extends BaseResource {
 
   async processes(projectId: string, id: number): Promise<ApiResponse<ContractProcesses>> {
     return this.http.get(`/contracts/${id}/processes`, { projectId });
+  }
+
+  async retryStaging(projectId: string, stagingId: number): Promise<ApiResponse<StagingActionResult>> {
+    return this.http.post(`/contracts/staging/${stagingId}/retry`, {}, { projectId }, { retry: false });
   }
 }

@@ -14,7 +14,8 @@ describe('Statements', () => {
       page: '2',
       perPage: '30',
       stagingIds: undefined,
-      processingStatus: undefined,
+      extractionStage: undefined,
+      score: undefined,
     });
   });
 
@@ -22,14 +23,15 @@ describe('Statements', () => {
     const http = createMockHttp();
     const statements = new Statements(http);
 
-    await statements.list('proj-1', { stagingIds: [10, 11], processingStatus: 'warnings' });
+    await statements.list('proj-1', { stagingIds: [10, 11], extractionStage: 'completed', score: true });
 
     expect(http.get).toHaveBeenCalledWith('/statements', {
       projectId: 'proj-1',
       page: undefined,
       perPage: undefined,
       stagingIds: '10,11',
-      processingStatus: 'warnings',
+      extractionStage: 'completed',
+      score: 'true',
     });
   });
 
@@ -39,7 +41,7 @@ describe('Statements', () => {
 
     await statements.get('proj-1', 77);
 
-    expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1', detailed: undefined });
+    expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1', detailed: undefined, score: undefined });
   });
 
   it('get requests the detailed CSV export', async () => {
@@ -48,7 +50,7 @@ describe('Statements', () => {
 
     await statements.get('proj-1', 77, { detailed: true });
 
-    expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1', detailed: 'true' });
+    expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1', detailed: 'true', score: undefined });
   });
 
   it('upload runs the mint -> put -> complete flow', async () => {
@@ -106,5 +108,12 @@ describe('Statements', () => {
     await statements.processes('proj-1', 77);
 
     expect(http.get).toHaveBeenCalledWith('/statements/77/processes', { projectId: 'proj-1' });
+  });
+
+  it('retries paused staging without automatic HTTP retries', async () => {
+    const http = createMockHttp();
+    const statements = new Statements(http);
+    await statements.retryStaging('proj-1', 77);
+    expect(http.post).toHaveBeenCalledWith('/statements/staging/77/retry', {}, { projectId: 'proj-1' }, { retry: false });
   });
 });

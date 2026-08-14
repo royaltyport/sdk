@@ -1,4 +1,6 @@
 import type { PaginationOptions } from './common.js';
+import type { ResourceScore } from './scores.js';
+import type { StagingActionState } from './staging.js';
 
 export type ExtractionId =
   | 'extract-accounting-period'
@@ -40,14 +42,17 @@ export interface Contract {
   file_type: string;
   created_at: string;
   extractions?: Record<string, unknown>;
+  score?: ResourceScore;
 }
 
 export interface ContractListOptions extends PaginationOptions {
   includes?: IncludeField[];
+  score?: boolean;
 }
 
 export interface ContractGetOptions {
   includes?: IncludeField[];
+  score?: boolean;
 }
 
 export interface ContractUploadOptions {
@@ -69,14 +74,14 @@ export interface DownloadResult {
   expiresIn: number;
 }
 
-export interface ContractProcesses {
+export interface ContractProcesses extends StagingActionState {
   staging_id: number;
   contract_id: number | null;
   staging_done: boolean;
   extraction_done: boolean;
   staging_processes: {
     stage: string;
-    info: Record<string, { info: Record<string, unknown>; status: string }>;
+    info: Record<string, unknown>;
   };
   extraction_processes: {
     stage: string;

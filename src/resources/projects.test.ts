@@ -20,4 +20,18 @@ describe('Projects', () => {
 
     expect(http.get).toHaveBeenCalledWith('/projects/proj-abc');
   });
+
+  it('create disables retries for the non-idempotent mutation', async () => {
+    const http = createMockHttp();
+    const projects = new Projects(http);
+
+    await projects.create({ name: 'New Project', entityName: 'Label BV' });
+
+    expect(http.post).toHaveBeenCalledWith(
+      '/projects',
+      { name: 'New Project', entityName: 'Label BV' },
+      undefined,
+      { retry: false },
+    );
+  });
 });

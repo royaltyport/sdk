@@ -8,7 +8,11 @@ export type {
 
 export type {
   Project,
+  ProjectCreateInput,
 } from './projects.js';
+
+export type { ScoreBuckets, ScoreSummary, TriggeredScoreRule, ResourceScore } from './scores.js';
+export type { StagingAvailableAction, StagingActionResult, StagingActionState } from './staging.js';
 
 export type {
   Artist,
@@ -78,7 +82,7 @@ export type {
   StatementDetailedExport,
   StatementListOptions,
   StatementGetOptions,
-  StatementProcessingStatus,
+  StatementExtractionStage,
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,

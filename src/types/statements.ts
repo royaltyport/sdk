@@ -1,4 +1,6 @@
 import type { PaginationOptions } from './common.js';
+import type { ResourceScore } from './scores.js';
+import type { StagingActionState } from './staging.js';
 
 export interface Statement {
   id: number;
@@ -13,7 +15,7 @@ export interface Statement {
   statement_subtype?: string;
   statement_producer?: string;
   statement_version?: string;
-  processing_status?: string;
+  extraction_stage?: StatementExtractionStage;
   upload_status?: string;
   approval_status?: string;
   has_revenues?: boolean;
@@ -31,9 +33,10 @@ export interface Statement {
   financials?: StatementFinancials;
   detailed?: StatementDetailedExport | null;
   detailed_error?: string | null;
+  score?: ResourceScore;
 }
 
-export type StatementProcessingStatus = 'processed' | 'processing' | 'errors' | 'failed' | 'warnings';
+export type StatementExtractionStage = 'queued' | 'processing' | 'completed' | 'failed' | 'paused' | 'timed_out' | 'skipped';
 
 export interface StatementFinancials {
   currency: string;
@@ -59,11 +62,13 @@ export interface StatementDetailedExport {
 
 export interface StatementListOptions extends PaginationOptions {
   stagingIds?: number[];
-  processingStatus?: StatementProcessingStatus;
+  extractionStage?: StatementExtractionStage;
+  score?: boolean;
 }
 
 export interface StatementGetOptions {
   detailed?: boolean;
+  score?: boolean;
 }
 
 export interface StatementUploadOptions {
@@ -84,18 +89,18 @@ export interface StatementDownloadResult {
   expiresIn: number;
 }
 
-export interface StatementProcesses {
+export interface StatementProcesses extends StagingActionState {
   staging_id: number;
   statement_id: number | null;
   staging_done: boolean;
-  processing_done: boolean;
+  extraction_done: boolean;
   staging_processes: {
     stage: string;
-    info: Record<string, { info: Record<string, unknown>; status: string }>;
+    info: Record<string, unknown>;
   };
-  processing_processes: {
-    status: string;
-    stage: number;
+  extraction_processes: {
+    stage: string;
+    step: number;
     remarks: Record<string, unknown>;
   } | null;
 }

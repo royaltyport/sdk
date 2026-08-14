@@ -8,6 +8,7 @@ import type {
   StatementDownloadResult,
   StatementProcesses,
 } from '../types/statements.js';
+import type { StagingActionResult } from '../types/staging.js';
 import { BaseResource } from './base.js';
 import { runUploadFlow } from './upload-flow.js';
 
@@ -18,7 +19,8 @@ export class Statements extends BaseResource {
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
       stagingIds: options?.stagingIds?.join(','),
-      processingStatus: options?.processingStatus,
+      extractionStage: options?.extractionStage,
+      score: options?.score?.toString(),
     });
   }
 
@@ -26,6 +28,7 @@ export class Statements extends BaseResource {
     return this.http.get(`/statements/${statementId}`, {
       projectId,
       detailed: options?.detailed?.toString(),
+      score: options?.score?.toString(),
     });
   }
 
@@ -43,5 +46,9 @@ export class Statements extends BaseResource {
 
   async processes(projectId: string, id: number): Promise<ApiResponse<StatementProcesses>> {
     return this.http.get(`/statements/${id}/processes`, { projectId });
+  }
+
+  async retryStaging(projectId: string, stagingId: number): Promise<ApiResponse<StagingActionResult>> {
+    return this.http.post(`/statements/staging/${stagingId}/retry`, {}, { projectId }, { retry: false });
   }
 }

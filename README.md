@@ -73,15 +73,15 @@ const royaltyport = new Royaltyport({
 
 | Resource | Methods | Description |
 |----------|---------|-------------|
-| `royaltyport.projects` | `list`, `get` | Projects |
+| `royaltyport.projects` | `list`, `get`, `create` | Projects |
 | `royaltyport.artists` | `list`, `get` | Artists (with merge history) |
 | `royaltyport.writers` | `list`, `get` | Writers (with merge history) |
 | `royaltyport.recordings` | `list`, `get` | Recordings (with products) |
 | `royaltyport.compositions` | `list`, `get` | Compositions (with products) |
 | `royaltyport.entities` | `list`, `get` | Entities (with merge history) |
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
-| `royaltyport.contracts` | `list`, `get`, `upload`, `download`, `processes` | Contracts with upload, download, and processing status |
-| `royaltyport.statements` | `list`, `get`, `upload`, `download`, `processes` | Statements with upload, download, and processing status |
+| `royaltyport.contracts` | `list`, `get`, `upload`, `download`, `processes`, `retryStaging` | Contracts with upload, download, scoring, and staging recovery |
+| `royaltyport.statements` | `list`, `get`, `upload`, `download`, `processes`, `retryStaging` | Statements with upload, download, scoring, and staging recovery |
 | `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
 | `royaltyport.search()` | — | Cross-resource search |
 
@@ -116,6 +116,19 @@ Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the fil
 
 ```js
 const { data: status } = await royaltyport.statements.processes(projectId, data.staging_id);
+```
+
+When `status.requires_action` is true, inspect `available_actions` and
+`pause_reason`, then retry a capacity pause:
+
+```js
+await royaltyport.statements.retryStaging(projectId, stagingId);
+```
+
+Score data is opt-in on contract and statement list/detail calls:
+
+```js
+const { data } = await royaltyport.contracts.list(projectId, { score: true });
 ```
 
 If the flow fails after the file bytes reached storage, the SDK throws `RoyaltyportUploadError` with a `step` (`'put'` or `'complete'`) and the `stagingId`. On a `'complete'` failure the bytes are already stored — completion can be re-run manually via `POST /v1/{statements|contracts}/uploads/complete` with that `stagingId`.

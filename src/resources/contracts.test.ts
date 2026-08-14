@@ -25,6 +25,7 @@ describe('Contracts', () => {
       page: '1',
       perPage: '10',
       includes: 'entities,royalties',
+      score: undefined,
     });
   });
 
@@ -39,6 +40,7 @@ describe('Contracts', () => {
       page: undefined,
       perPage: undefined,
       includes: undefined,
+      score: undefined,
     });
   });
 
@@ -51,7 +53,17 @@ describe('Contracts', () => {
     expect(http.get).toHaveBeenCalledWith('/contracts/99', {
       projectId: 'proj-1',
       includes: 'dates,signatures',
+      score: undefined,
     });
+  });
+
+  it('forwards score on list and get', async () => {
+    const http = createMockHttp();
+    const contracts = new Contracts(http);
+    await contracts.list('proj-1', { score: true });
+    await contracts.get('proj-1', 99, { score: true });
+    expect(http.get).toHaveBeenNthCalledWith(1, '/contracts', expect.objectContaining({ score: 'true' }));
+    expect(http.get).toHaveBeenNthCalledWith(2, '/contracts/99', expect.objectContaining({ score: 'true' }));
   });
 
   it('upload runs the mint -> put -> complete flow', async () => {
@@ -122,5 +134,12 @@ describe('Contracts', () => {
     await contracts.processes('proj-1', 42);
 
     expect(http.get).toHaveBeenCalledWith('/contracts/42/processes', { projectId: 'proj-1' });
+  });
+
+  it('retries paused staging without automatic HTTP retries', async () => {
+    const http = createMockHttp();
+    const contracts = new Contracts(http);
+    await contracts.retryStaging('proj-1', 42);
+    expect(http.post).toHaveBeenCalledWith('/contracts/staging/42/retry', {}, { projectId: 'proj-1' }, { retry: false });
   });
 });
