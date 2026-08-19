@@ -27,7 +27,7 @@ function mintResponse(stagingId = 123) {
 }
 
 function completeResponse(stagingId = 123) {
-  return jsonResponse({ data: { staging_id: stagingId, status: 'uploaded' } });
+  return jsonResponse({ data: { staging_id: stagingId, status: 'uploaded', context_applied: false } });
 }
 
 function createStatements(fetchFn: typeof globalThis.fetch) {
@@ -81,7 +81,12 @@ describe('upload flow orchestration', () => {
     expect(completeUrl).toBe('https://api.example.com/v1/statements/uploads/complete?projectId=proj-1');
     expect(JSON.parse(completeInit.body as string)).toEqual({ stagingId: 123 });
 
-    expect(result.data).toEqual({ staging_id: 123, status: 'uploaded', file_path: FILE_PATH });
+    expect(result.data).toEqual({
+      staging_id: 123,
+      status: 'uploaded',
+      file_path: FILE_PATH,
+      context_applied: false,
+    });
     expect(result.rateLimit).toEqual({ limit: 10, remaining: 9, reset: 1 });
   });
 
@@ -100,6 +105,90 @@ describe('upload flow orchestration', () => {
     const mintBody = JSON.parse((fetchFn.mock.calls[0]![1] as RequestInit).body as string);
     expect(mintBody.extractions).toEqual(['extract-dates']);
     expect(fetchFn.mock.calls[0]![0]).toBe('https://api.example.com/v1/contracts/uploads?projectId=proj-1');
+  });
+
+  it('sends approved statement context and returns contextual completion fields', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(mintResponse())
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(jsonResponse({
+        data: {
+          staging_id: 123,
+          status: 'queued',
+          context_applied: true,
+          snapshot_hash: 'a'.repeat(64),
+          enqueued: 1,
+          paused: 0,
+        },
+      }));
+    const statements = createStatements(fetchFn);
+
+    const result = await statements.upload('proj-1', pdfBytes, {
+      folderName: 'Ocean Wave/2026/Q1',
+      context: {
+        accountingPeriod: { value: '2026Q1' },
+        targetPeriod: { value: '2026Q1' },
+        currencyRoyalty: 'GBP',
+        currencyTransaction: 'USD',
+        payee: 'Ocean Wave Records Ltd',
+        payor: 'Absolute Marketing & Distribution Ltd',
+        classification: {
+          scenarioFamily: 'distribution.general',
+          targetFamily: 'recording_distribution',
+        },
+        tags: ['Priority', 'Quarterly'],
+      },
+    });
+
+    const mintBody = JSON.parse((fetchFn.mock.calls[0]![1] as RequestInit).body as string);
+    expect(mintBody).toMatchObject({
+      folderName: 'Ocean Wave/2026/Q1',
+      context: {
+        accountingPeriod: { value: '2026Q1' },
+        targetPeriod: { value: '2026Q1' },
+        currencyRoyalty: 'GBP',
+        currencyTransaction: 'USD',
+        payee: 'Ocean Wave Records Ltd',
+        payor: 'Absolute Marketing & Distribution Ltd',
+        classification: {
+          scenarioFamily: 'distribution.general',
+          targetFamily: 'recording_distribution',
+        },
+        tags: ['Priority', 'Quarterly'],
+      },
+    });
+    expect(result.data).toEqual({
+      staging_id: 123,
+      status: 'queued',
+      file_path: FILE_PATH,
+      context_applied: true,
+      snapshot_hash: 'a'.repeat(64),
+      enqueued: 1,
+      paused: 0,
+    });
+  });
+
+  it('sends contract tag names and folder metadata', async () => {
+    const fetchFn = happyPathFetch();
+    const http = new HttpClient({
+      baseUrl: 'https://api.example.com',
+      token: 'test-token',
+      fetch: fetchFn,
+      retryDelay: 0,
+    });
+    const contracts = new Contracts(http);
+
+    await contracts.upload('proj-1', pdfBytes, {
+      folderName: 'Ocean Wave/Agreements',
+      context: { tags: ['Priority', 'Artist agreement'] },
+    });
+
+    const mintBody = JSON.parse((fetchFn.mock.calls[0]![1] as RequestInit).body as string);
+    expect(mintBody).toMatchObject({
+      folderName: 'Ocean Wave/Agreements',
+      context: { tags: ['Priority', 'Artist agreement'] },
+    });
   });
 });
 

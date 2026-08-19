@@ -1,6 +1,7 @@
 import type { PaginationOptions } from './common.js';
 import type { ResourceScore } from './scores.js';
 import type { StagingActionState } from './staging.js';
+import type { StatementUploadContext, UploadResult } from './uploads.js';
 
 export interface Statement {
   id: number;
@@ -74,13 +75,11 @@ export interface StatementGetOptions {
 export interface StatementUploadOptions {
   fileName?: string;
   fileType?: string;
+  folderName?: string | null;
+  context?: StatementUploadContext;
 }
 
-export interface StatementUploadResult {
-  staging_id: number;
-  status: 'uploaded';
-  file_path: string;
-}
+export type StatementUploadResult = UploadResult;
 
 export interface StatementDownloadResult {
   url: string;

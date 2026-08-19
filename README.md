@@ -102,17 +102,40 @@ for (const item of knowledge.results) {
 `upload()` accepts a file path, `Buffer`, `Uint8Array`, or `Blob`. Files must be PDFs of at most 50 MB — enforced locally before any request and re-validated server-side against the real bytes.
 
 ```js
-// Statements
-const { data } = await royaltyport.statements.upload(projectId, './statement.pdf');
-console.log(data); // { staging_id: 123, status: 'uploaded', file_path: '...' }
+// Statements with approved staging context. Existing tag names are reused and
+// missing project statement tags are created automatically.
+const { data } = await royaltyport.statements.upload(projectId, './statement.pdf', {
+  folderName: 'Ocean Wave/2026/Q1',
+  context: {
+    accountingPeriod: { value: '2026Q1' },
+    targetPeriod: { value: '2026Q1' },
+    currencyRoyalty: 'GBP',
+    currencyTransaction: 'USD',
+    payee: 'Ocean Wave Records Ltd',
+    payor: 'Absolute Marketing & Distribution Ltd',
+    classification: {
+      scenarioFamily: 'distribution.general',
+      targetFamily: 'recording_distribution',
+    },
+    tags: ['Priority', 'Quarterly'],
+  },
+});
+console.log(data.status, data.context_applied); // 'queued', true
 
-// Contracts, with optional extractions
+// Contracts, with optional extractions, folder, and tag names
 const { data: contract } = await royaltyport.contracts.upload(projectId, './contract.pdf', {
   extractions: ['extract-dates', 'extract-royalties'],
+  folderName: 'Ocean Wave/Agreements',
+  context: { tags: ['Priority', 'Artist agreement'] },
 });
 ```
 
 Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `processes()` for staging progress instead:
+
+Supplying `folderName` or `context` seals the metadata immediately and skips the
+review step. Contextual results have `status: 'queued' | 'paused'`,
+`context_applied: true`, and include the immutable `snapshot_hash` plus queue
+counts. Context-free uploads retain `status: 'uploaded'`.
 
 ```js
 const { data: status } = await royaltyport.statements.processes(projectId, data.staging_id);

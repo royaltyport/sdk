@@ -61,7 +61,7 @@ describe('Statements', () => {
         data: { staging_id: 123, upload_url: 'https://storage.example.com/signed', file_path: 'proj-1/statements_staging/abc' },
         rateLimit,
       })
-      .mockResolvedValueOnce({ data: { staging_id: 123, status: 'uploaded' }, rateLimit });
+      .mockResolvedValueOnce({ data: { staging_id: 123, status: 'uploaded', context_applied: false }, rateLimit });
     const statements = new Statements(http);
 
     const blob = new Blob(['%PDF-1.4 data'], { type: 'application/pdf' });
@@ -89,6 +89,7 @@ describe('Statements', () => {
       staging_id: 123,
       status: 'uploaded',
       file_path: 'proj-1/statements_staging/abc',
+      context_applied: false,
     });
   });
 

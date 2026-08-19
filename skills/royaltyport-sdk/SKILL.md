@@ -3,7 +3,7 @@ name: royaltyport-sdk
 description: Query and manage Royaltyport project data via the Node.js SDK. Use when working with music royalty contracts, statements, entities, artists, writers, relations, recordings, or compositions programmatically.
 metadata:
   author: royaltyport
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 # Skill: Royaltyport SDK
@@ -219,14 +219,16 @@ console.log(processes.staging_done, processes.extraction_done);
 
 ### Contract Upload
 
-Uploads are PDF-only, max 50 MB. Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload — the result is `{ staging_id, status: 'uploaded', file_path }`. Poll `processes()` for staging/extraction progress.
+Uploads are PDF-only, max 50 MB. Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Context-free uploads return `status: 'uploaded'`; uploads with a folder or approved context return `queued` or `paused` plus immutable context and queue metadata. Poll `processes()` for staging/extraction progress.
 
 ```ts
 // Upload from file path
 const { data: result } = await royaltyport.contracts.upload('project_id', './contract.pdf', {
   extractions: ['extract-royalties', 'extract-splits', 'extract-dates'],
+  folderName: 'Ocean Wave/Agreements',
+  context: { tags: ['Priority', 'Artist agreement'] },
 });
-console.log(result.staging_id, result.status); // 123 'uploaded'
+console.log(result.staging_id, result.status, result.context_applied); // 123 'queued' true
 
 // Upload from Buffer/Uint8Array/Blob
 const { data: result } = await royaltyport.contracts.upload('project_id', fileBuffer, {
@@ -257,9 +259,24 @@ const { data: statement } = await royaltyport.statements.get('project_id', state
 console.log(statement.financials?.licensor_revenue, statement.statement_summary?.summary);
 console.log(statement.detailed?.csv_url);
 
-// Upload a statement (PDF-only, max 50 MB)
-const { data: result } = await royaltyport.statements.upload('project_id', './statement.pdf');
-console.log(result.staging_id, result.status); // 123 'uploaded'
+// Upload a statement with approved metadata (PDF-only, max 50 MB)
+const { data: result } = await royaltyport.statements.upload('project_id', './statement.pdf', {
+  folderName: 'Ocean Wave/2026/Q1',
+  context: {
+    accountingPeriod: { value: '2026Q1' },
+    targetPeriod: { value: '2026Q1' },
+    currencyRoyalty: 'GBP',
+    currencyTransaction: 'USD',
+    payee: 'Ocean Wave Records Ltd',
+    payor: 'Absolute Marketing & Distribution Ltd',
+    classification: {
+      scenarioFamily: 'distribution.general',
+      targetFamily: 'recording_distribution',
+    },
+    tags: ['Priority', 'Quarterly'],
+  },
+});
+console.log(result.staging_id, result.status); // 123 'queued'
 
 // Download a statement
 const { data: download } = await royaltyport.statements.download('project_id', statementId);

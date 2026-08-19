@@ -3,6 +3,7 @@ import { basename } from 'node:path';
 import type { HttpClient } from '../http.js';
 import type { ApiResponse } from '../types/common.js';
 import type { ExtractionId } from '../types/contracts.js';
+import type { ContractUploadContext, StatementUploadContext, UploadResult } from '../types/uploads.js';
 import { RoyaltyportError, RoyaltyportUploadError, RoyaltyportValidationError } from '../errors.js';
 
 const MAX_FILE_SIZE = 52_428_800; // 50 MB, mirrors the server's limit
@@ -14,16 +15,9 @@ interface UploadUrlResult {
   file_path: string;
 }
 
-interface CompleteResult {
-  staging_id: number;
-  status: 'uploaded';
-}
+type CompleteResult = Omit<UploadResult, 'file_path'>;
 
-export interface UploadFlowResult {
-  staging_id: number;
-  status: 'uploaded';
-  file_path: string;
-}
+export type UploadFlowResult = UploadResult;
 
 export interface UploadFlowParams {
   http: HttpClient;
@@ -35,6 +29,8 @@ export interface UploadFlowParams {
         fileName?: string;
         fileType?: string;
         extractions?: ExtractionId[];
+        folderName?: string | null;
+        context?: ContractUploadContext | StatementUploadContext;
       }
     | undefined;
 }
@@ -105,6 +101,8 @@ export async function runUploadFlow({
       fileSize,
       ...(fileExtension && { fileExtension }),
       ...(options?.extractions && { extractions: options.extractions }),
+      ...(options?.folderName !== undefined && { folderName: options.folderName }),
+      ...(options?.context !== undefined && { context: options.context }),
     },
     { projectId },
     { retry: false },
@@ -145,7 +143,7 @@ export async function runUploadFlow({
   }
 
   return {
-    data: { staging_id, status: 'uploaded', file_path },
+    data: { ...done.data, staging_id, file_path },
     rateLimit: done.rateLimit,
   };
 }

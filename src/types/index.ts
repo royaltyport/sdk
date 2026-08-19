@@ -13,6 +13,16 @@ export type {
 
 export type { ScoreBuckets, ScoreSummary, TriggeredScoreRule, ResourceScore } from './scores.js';
 export type { StagingAvailableAction, StagingActionResult, StagingActionState } from './staging.js';
+export type {
+  UploadStatus,
+  UploadPeriod,
+  StatementTargetFamily,
+  StatementScenarioFamily,
+  StatementUploadClassification,
+  StatementUploadContext,
+  ContractUploadContext,
+  UploadResult,
+} from './uploads.js';
 
 export type {
   Artist,

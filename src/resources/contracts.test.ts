@@ -10,7 +10,7 @@ function mockUploadFlow(http: HttpClient) {
       data: { staging_id: 42, upload_url: 'https://storage.example.com/signed', file_path: 'proj-1/contracts_staging/abc' },
       rateLimit,
     })
-    .mockResolvedValueOnce({ data: { staging_id: 42, status: 'uploaded' }, rateLimit });
+    .mockResolvedValueOnce({ data: { staging_id: 42, status: 'uploaded', context_applied: false }, rateLimit });
 }
 
 describe('Contracts', () => {
@@ -96,6 +96,7 @@ describe('Contracts', () => {
       staging_id: 42,
       status: 'uploaded',
       file_path: 'proj-1/contracts_staging/abc',
+      context_applied: false,
     });
   });
 

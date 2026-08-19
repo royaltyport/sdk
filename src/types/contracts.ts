@@ -1,6 +1,7 @@
 import type { PaginationOptions } from './common.js';
 import type { ResourceScore } from './scores.js';
 import type { StagingActionState } from './staging.js';
+import type { ContractUploadContext, UploadResult } from './uploads.js';
 
 export type ExtractionId =
   | 'extract-accounting-period'
@@ -59,13 +60,11 @@ export interface ContractUploadOptions {
   fileName?: string;
   fileType?: string;
   extractions?: ExtractionId[];
+  folderName?: string | null;
+  context?: ContractUploadContext;
 }
 
-export interface ContractUploadResult {
-  staging_id: number;
-  status: 'uploaded';
-  file_path: string;
-}
+export type ContractUploadResult = UploadResult;
 
 export interface DownloadResult {
   url: string;
