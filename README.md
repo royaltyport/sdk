@@ -130,6 +130,10 @@ const { data: contract } = await royaltyport.contracts.upload(projectId, './cont
 });
 ```
 
+Period objects are value-only. Use `2026M1`–`2026M12`, `2026Q1`–`2026Q4`,
+`2026H1`/`2026H2`, or `2026Y`; period labels and start/end date overrides are
+not accepted. Tags are names, not IDs.
+
 Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `processes()` for staging progress instead:
 
 Supplying `folderName` or `context` seals the metadata immediately and skips the

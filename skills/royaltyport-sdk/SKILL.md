@@ -285,6 +285,11 @@ const { data: download } = await royaltyport.statements.download('project_id', s
 const { data: processes } = await royaltyport.statements.processes('project_id', statementId);
 ```
 
+Upload periods are value-only and use forms such as `2026M1`–`2026M12`,
+`2026Q1`–`2026Q4`, `2026H1`/`2026H2`, or `2026Y`. Do not send period
+labels or start/end dates. Upload tags are names, not IDs; exact matches are
+reused and missing project/resource tags are created automatically.
+
 ### Search
 
 Search across all resource types in a project:
