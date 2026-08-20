@@ -5,9 +5,14 @@ import type { ApiResponse } from '../types/common.js';
 import type { ExtractionId } from '../types/contracts.js';
 import type { ContractUploadContext, StatementUploadContext, UploadResult } from '../types/uploads.js';
 import { RoyaltyportError, RoyaltyportUploadError, RoyaltyportValidationError } from '../errors.js';
+import {
+  getStatementUploadExtension,
+  isStatementUploadFileNameAccepted,
+  resolveStatementUploadMimeType,
+} from './statement-upload.js';
 
 const MAX_FILE_SIZE = 52_428_800; // 50 MB, mirrors the server's limit
-const ALLOWED_FILE_TYPE = 'application/pdf';
+const CONTRACT_UPLOAD_FILE_TYPE = 'application/pdf';
 
 interface UploadUrlResult {
   staging_id: number;
@@ -43,8 +48,16 @@ interface NormalizedFile {
   fileExtension: string | undefined;
 }
 
+function getFileExtension(fileName: string): string {
+  const lastDot = fileName.lastIndexOf('.');
+  return lastDot > 0 && lastDot < fileName.length - 1
+    ? fileName.slice(lastDot + 1).toLowerCase()
+    : '';
+}
+
 async function normalizeFile(
   file: Buffer | Uint8Array | Blob | string,
+  resourcePath: UploadFlowParams['resourcePath'],
   options?: UploadFlowParams['options'],
 ): Promise<NormalizedFile> {
   let bytes: Uint8Array;
@@ -54,19 +67,22 @@ async function normalizeFile(
   if (typeof file === 'string') {
     bytes = new Uint8Array(await readFile(file));
     fileName = options?.fileName ?? basename(file);
-    fileType = options?.fileType ?? ALLOWED_FILE_TYPE;
   } else if (file instanceof Blob) {
     bytes = new Uint8Array(await file.arrayBuffer());
     fileName = options?.fileName ?? 'upload.pdf';
-    fileType = options?.fileType ?? (file.type || ALLOWED_FILE_TYPE);
   } else {
     bytes = file;
     fileName = options?.fileName ?? 'upload.pdf';
-    fileType = options?.fileType ?? ALLOWED_FILE_TYPE;
   }
 
-  const dot = fileName.lastIndexOf('.');
-  const extension = dot > 0 ? fileName.slice(dot + 1) : '';
+  const blobFileType = file instanceof Blob && file.type ? file.type : undefined;
+  const suppliedFileType = options?.fileType ?? blobFileType;
+  fileType = resourcePath === '/statements'
+    ? resolveStatementUploadMimeType(fileName, suppliedFileType)
+    : suppliedFileType ?? CONTRACT_UPLOAD_FILE_TYPE;
+  const extension = resourcePath === '/statements'
+    ? getStatementUploadExtension(fileName)
+    : getFileExtension(fileName);
   return {
     bytes,
     fileName,
@@ -83,11 +99,17 @@ export async function runUploadFlow({
   file,
   options,
 }: UploadFlowParams): Promise<ApiResponse<UploadFlowResult>> {
-  const { bytes, fileName, fileType, fileSize, fileExtension } = await normalizeFile(file, options);
+  const { bytes, fileName, fileType, fileSize, fileExtension } = await normalizeFile(file, resourcePath, options);
 
   // Local preflight mirroring the server's mint validation — fail before any network call.
-  if (fileType !== ALLOWED_FILE_TYPE) {
-    throw new RoyaltyportValidationError(`fileType must be one of: ${ALLOWED_FILE_TYPE}`);
+  if (resourcePath === '/statements' && !isStatementUploadFileNameAccepted(fileName)) {
+    throw new RoyaltyportValidationError('fileName is not supported by the statement stager');
+  }
+  if (
+    resourcePath === '/contracts'
+    && (fileType !== CONTRACT_UPLOAD_FILE_TYPE || (fileExtension && fileExtension !== 'pdf'))
+  ) {
+    throw new RoyaltyportValidationError('Contracts must be PDF files with fileType application/pdf');
   }
   if (fileSize > MAX_FILE_SIZE) {
     throw new RoyaltyportValidationError(`fileSize exceeds maximum of ${MAX_FILE_SIZE} bytes`);

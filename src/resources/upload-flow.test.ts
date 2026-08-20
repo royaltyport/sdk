@@ -40,6 +40,16 @@ function createStatements(fetchFn: typeof globalThis.fetch) {
   return new Statements(http);
 }
 
+function createContracts(fetchFn: typeof globalThis.fetch) {
+  const http = new HttpClient({
+    baseUrl: 'https://api.example.com',
+    token: 'test-token',
+    fetch: fetchFn,
+    retryDelay: 0,
+  });
+  return new Contracts(http);
+}
+
 function happyPathFetch() {
   return vi
     .fn()
@@ -92,13 +102,7 @@ describe('upload flow orchestration', () => {
 
   it('sends extractions as a real JSON array for contracts', async () => {
     const fetchFn = happyPathFetch();
-    const http = new HttpClient({
-      baseUrl: 'https://api.example.com',
-      token: 'test-token',
-      fetch: fetchFn,
-      retryDelay: 0,
-    });
-    const contracts = new Contracts(http);
+    const contracts = createContracts(fetchFn);
 
     await contracts.upload('proj-1', pdfBytes, { extractions: ['extract-dates'] });
 
@@ -171,13 +175,7 @@ describe('upload flow orchestration', () => {
 
   it('sends contract tag names and folder metadata', async () => {
     const fetchFn = happyPathFetch();
-    const http = new HttpClient({
-      baseUrl: 'https://api.example.com',
-      token: 'test-token',
-      fetch: fetchFn,
-      retryDelay: 0,
-    });
-    const contracts = new Contracts(http);
+    const contracts = createContracts(fetchFn);
 
     await contracts.upload('proj-1', pdfBytes, {
       folderName: 'Ocean Wave/Agreements',
@@ -210,6 +208,30 @@ describe('input normalization', () => {
       fileSize: pdfBytes.byteLength,
       fileExtension: 'pdf',
     });
+  });
+
+  it.each([
+    ['statement.csv', 'text/csv'],
+    ['statement.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  ])('infers statement upload metadata for %s', async (fileName, expectedFileType) => {
+    const dir = await mkdtemp(join(tmpdir(), 'sdk-upload-'));
+    const filePath = join(dir, fileName);
+    await writeFile(filePath, pdfBytes);
+
+    const fetchFn = happyPathFetch();
+    const statements = createStatements(fetchFn);
+
+    await statements.upload('proj-1', filePath);
+
+    const mintBody = JSON.parse((fetchFn.mock.calls[0]![1] as RequestInit).body as string);
+    expect(mintBody).toEqual({
+      fileName,
+      fileType: expectedFileType,
+      fileSize: pdfBytes.byteLength,
+      fileExtension: fileName.slice(fileName.lastIndexOf('.') + 1),
+    });
+    const putHeaders = fetchFn.mock.calls[1]![1]?.headers as Record<string, string>;
+    expect(putHeaders['content-type']).toBe(expectedFileType);
   });
 
   it('normalizes a Buffer with defaults', async () => {
@@ -282,12 +304,33 @@ describe('local preflight', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
-  it('rejects non-PDF fileType without any network call', async () => {
+  it('rejects unsupported statement extensions without any network call', async () => {
     const fetchFn = vi.fn();
     const statements = createStatements(fetchFn);
 
     await expect(
-      statements.upload('proj-1', pdfBytes, { fileType: 'text/csv' }),
+      statements.upload('proj-1', pdfBytes, { fileName: 'statement.zip' }),
+    ).rejects.toThrow(RoyaltyportValidationError);
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it('accepts extensionless statement file names', async () => {
+    const fetchFn = happyPathFetch();
+    const statements = createStatements(fetchFn);
+
+    await statements.upload('proj-1', pdfBytes, { fileName: 'statement-export' });
+
+    const mintBody = JSON.parse((fetchFn.mock.calls[0]![1] as RequestInit).body as string);
+    expect(mintBody.fileType).toBe('application/octet-stream');
+    expect(mintBody).not.toHaveProperty('fileExtension');
+  });
+
+  it('keeps contract uploads PDF-only without any network call', async () => {
+    const fetchFn = vi.fn();
+    const contracts = createContracts(fetchFn);
+
+    await expect(
+      contracts.upload('proj-1', pdfBytes, { fileName: 'contract.xlsx' }),
     ).rejects.toThrow(RoyaltyportValidationError);
     expect(fetchFn).not.toHaveBeenCalled();
   });

@@ -99,12 +99,12 @@ for (const item of knowledge.results) {
 
 ## File Uploads
 
-`upload()` accepts a file path, `Buffer`, `Uint8Array`, or `Blob`. Files must be PDFs of at most 50 MB — enforced locally before any request and re-validated server-side against the real bytes.
+`upload()` accepts a file path, `Buffer`, `Uint8Array`, or `Blob`. Contracts must be PDFs. Statements accept extensionless files and `.csv`, `.tsv`, `.tab`, `.txt`, `.cat`, `.roy`, `.crd`, `.prt`, `.p01`, `.gdf`, `.021`, `.030`, `.303`, `.xlsx`, `.xltx`, `.xlsm`, `.xls`, `.xlsb`, `.ods`, `.xml`, `.gz`, `.pdf`, `.asc`, `.dat`, and `.cp9385146`. Files may be at most 50 MB; the SDK checks the name and size locally, while the server-side stager validates the stored bytes.
 
 ```js
 // Statements with approved staging context. Existing tag names are reused and
 // missing project statement tags are created automatically.
-const { data } = await royaltyport.statements.upload(projectId, './statement.pdf', {
+const { data } = await royaltyport.statements.upload(projectId, './statement.xlsx', {
   folderName: 'Ocean Wave/2026/Q1',
   context: {
     accountingPeriod: { value: '2026Q1' },
