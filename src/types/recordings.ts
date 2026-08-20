@@ -1,11 +1,12 @@
 import type { PaginationOptions } from './common.js';
+import type { AssetIdentifier } from './identifiers.js';
 
 export interface Recording {
   id: number;
   internal_uuid: string;
   name: string;
   type: 'original' | 'derivative';
-  isrc?: string;
+  identifiers: AssetIdentifier<'isrc'>[];
   duration_ms?: number;
   release_date?: string;
   artists: RecordingArtist[];

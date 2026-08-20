@@ -9,6 +9,14 @@ describe('Compositions (integration)', () => {
     expect(data).toHaveProperty('items');
     expect(data).toHaveProperty('total_count');
     expect(Array.isArray(data.items)).toBe(true);
+    for (const composition of data.items) {
+      expect(Array.isArray(composition.identifiers)).toBe(true);
+      for (const identifier of composition.identifiers) {
+        expect(identifier.type).toBe('iswc');
+        expect(typeof identifier.value).toBe('string');
+        expect(typeof identifier.source).toBe('string');
+      }
+    }
   });
 
   it('lists compositions with includeProducts', async () => {
@@ -27,6 +35,7 @@ describe('Compositions (integration)', () => {
     expect(data.id).toBe(compositionId);
     expect(typeof data.name).toBe('string');
     expect(typeof data.created_at).toBe('string');
+    expect(Array.isArray(data.identifiers)).toBe(true);
     expect(rateLimit.limit).toBeGreaterThan(0);
   });
 

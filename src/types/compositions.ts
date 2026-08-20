@@ -1,9 +1,11 @@
 import type { PaginationOptions } from './common.js';
+import type { AssetIdentifier } from './identifiers.js';
 
 export interface Composition {
   id: number;
   name: string;
   type?: string;
+  identifiers: AssetIdentifier<'iswc'>[];
   writers?: unknown[];
   artists?: unknown[];
   creators: CompositionWriter[];

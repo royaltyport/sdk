@@ -9,6 +9,14 @@ describe('Recordings (integration)', () => {
     expect(data).toHaveProperty('items');
     expect(data).toHaveProperty('total_count');
     expect(Array.isArray(data.items)).toBe(true);
+    for (const recording of data.items) {
+      expect(Array.isArray(recording.identifiers)).toBe(true);
+      for (const identifier of recording.identifiers) {
+        expect(identifier.type).toBe('isrc');
+        expect(typeof identifier.value).toBe('string');
+        expect(typeof identifier.source).toBe('string');
+      }
+    }
   });
 
   it('lists recordings with includeProducts', async () => {
@@ -27,6 +35,7 @@ describe('Recordings (integration)', () => {
     expect(data.id).toBe(recordingId);
     expect(typeof data.name).toBe('string');
     expect(typeof data.created_at).toBe('string');
+    expect(Array.isArray(data.identifiers)).toBe(true);
     expect(rateLimit.limit).toBeGreaterThan(0);
   });
 

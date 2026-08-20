@@ -125,7 +125,8 @@ const { data } = await royaltyport.recordings.list('project_id', {
 });
 
 for (const recording of data.items) {
-  console.log(recording.name, recording.isrc, recording.type); // type: 'original' | 'derivative'
+  const isrcs = recording.identifiers.map((identifier) => identifier.value);
+  console.log(recording.name, isrcs, recording.type); // type: 'original' | 'derivative'
 }
 
 // Get a single recording
@@ -145,7 +146,8 @@ const { data } = await royaltyport.compositions.list('project_id', {
 });
 
 for (const composition of data.items) {
-  console.log(composition.name, composition.type);
+  const iswcs = composition.identifiers.map((identifier) => identifier.value);
+  console.log(composition.name, iswcs, composition.type);
 }
 
 // Get a single composition

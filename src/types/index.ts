@@ -6,6 +6,8 @@ export type {
   ApiResponse,
 } from './common.js';
 
+export type { AssetIdentifier, AssetIdentifierType } from './identifiers.js';
+
 export type {
   Project,
   ProjectCreateInput,
