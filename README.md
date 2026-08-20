@@ -158,6 +158,16 @@ Score data is opt-in on contract and statement list/detail calls:
 const { data } = await royaltyport.contracts.list(projectId, { score: true });
 ```
 
+Custom extractor results are also opt-in by numeric extractor ID. Each result
+contains the extractor ID, its current name, and the extracted data:
+
+```js
+const { data } = await royaltyport.contracts.list(projectId, {
+  extractorIds: [201, 202],
+});
+console.log(data.items[0]?.custom_extractions);
+```
+
 If the flow fails after the file bytes reached storage, the SDK throws `RoyaltyportUploadError` with a `step` (`'put'` or `'complete'`) and the `stagingId`. On a `'complete'` failure the bytes are already stored — completion can be re-run manually via `POST /v1/{statements|contracts}/uploads/complete` with that `stagingId`.
 
 ## Error Handling

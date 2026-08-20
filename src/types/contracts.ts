@@ -43,16 +43,25 @@ export interface Contract {
   file_type: string;
   created_at: string;
   extractions?: Record<string, unknown>;
+  custom_extractions?: CustomExtraction[];
   score?: ResourceScore;
+}
+
+export interface CustomExtraction {
+  extractor_id: number;
+  extractor_name: string | null;
+  data: unknown;
 }
 
 export interface ContractListOptions extends PaginationOptions {
   includes?: IncludeField[];
+  extractorIds?: number[];
   score?: boolean;
 }
 
 export interface ContractGetOptions {
   includes?: IncludeField[];
+  extractorIds?: number[];
   score?: boolean;
 }
 
