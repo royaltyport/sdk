@@ -19,6 +19,7 @@ export class Contracts extends BaseResource {
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
       includes: options?.includes?.join(','),
+      extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
     });
   }
@@ -27,6 +28,7 @@ export class Contracts extends BaseResource {
     return this.http.get(`/contracts/${contractId}`, {
       projectId,
       includes: options?.includes?.join(','),
+      extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
     });
   }

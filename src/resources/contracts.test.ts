@@ -25,6 +25,7 @@ describe('Contracts', () => {
       page: '1',
       perPage: '10',
       includes: 'entities,royalties',
+      extractorIds: undefined,
       score: undefined,
     });
   });
@@ -40,6 +41,7 @@ describe('Contracts', () => {
       page: undefined,
       perPage: undefined,
       includes: undefined,
+      extractorIds: undefined,
       score: undefined,
     });
   });
@@ -53,8 +55,18 @@ describe('Contracts', () => {
     expect(http.get).toHaveBeenCalledWith('/contracts/99', {
       projectId: 'proj-1',
       includes: 'dates,signatures',
+      extractorIds: undefined,
       score: undefined,
     });
+  });
+
+  it('forwards custom extractor IDs on list and get', async () => {
+    const http = createMockHttp();
+    const contracts = new Contracts(http);
+    await contracts.list('proj-1', { extractorIds: [201, 202] });
+    await contracts.get('proj-1', 99, { extractorIds: [201] });
+    expect(http.get).toHaveBeenNthCalledWith(1, '/contracts', expect.objectContaining({ extractorIds: '201,202' }));
+    expect(http.get).toHaveBeenNthCalledWith(2, '/contracts/99', expect.objectContaining({ extractorIds: '201' }));
   });
 
   it('forwards score on list and get', async () => {

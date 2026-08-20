@@ -201,6 +201,7 @@ const { data } = await royaltyport.contracts.list('project_id', {
   page: 1,
   perPage: 50,
   includes: ['entities', 'royalties', 'splits'], // include extracted data
+  extractorIds: [201, 202], // include selected custom extractor results
 });
 
 // Get a single contract with extracted data
@@ -238,6 +239,9 @@ const { data: result } = await royaltyport.contracts.upload('project_id', fileBu
   extractions: ['extract-royalties'],
 });
 ```
+
+Selected custom results appear under `custom_extractions` with
+`extractor_id`, `extractor_name`, and `data`.
 
 **Available extractions:** `extract-accounting-period`, `extract-assets`, `extract-commitments`, `extract-compensations`, `extract-control-areas`, `extract-costs`, `extract-creative-approvals`, `extract-dates`, `extract-royalties`, `extract-signatures`, `extract-splits`, `extract-targets`, `extract-balances`.
 
