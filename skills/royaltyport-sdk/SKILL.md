@@ -207,13 +207,13 @@ const { data } = await royaltyport.contracts.list('project_id', {
 // Get a single contract with extracted data
 const { data: contract } = await royaltyport.contracts.get('project_id', contractId, {
   includes: ['entities', 'artists', 'writers', 'royalties', 'splits', 'dates', 'commitments'],
-  includeCitations: true,
+  citations: true,
 });
 
 for (const commitment of contract.extractions?.commitments ?? []) {
   console.log(commitment.linked_deliverables);
   console.log(commitment.linked_assets); // joined automatically
-  console.log(commitment.citations); // normalized, opt-in
+  console.log(commitment.citations);
 }
 
 // Download a contract (returns a signed URL)
@@ -225,13 +225,11 @@ const { data: processes } = await royaltyport.contracts.processes('project_id', 
 console.log(processes.staging_done, processes.extraction_done);
 ```
 
-**Available include fields:** `entities`, `artists`, `writers`, `royalties`, `splits`, `costs`, `compensations`, `dates`, `accounting-periods`, `types`, `signatures`, `control-areas`, `creative-approvals`, `commitments`, `balances`, `recordings`, `compositions`.
+**Available include fields:** `entities`, `artists`, `writers`, `royalties`, `splits`, `costs`, `compensations`, `dates`, `accounting-periods`, `types`, `signatures`, `control-areas`, `creative-approvals`, `commitments`, `recordings`, `compositions`, `relations`. `relations` is available on `contracts.get()`.
 
 Commitments expose extracted items as `linked_deliverables` and automatically
-joined recording/composition links as `linked_assets`. Reconciliation metadata
-is not returned, and commitment IDs can change after re-extraction.
-Citations are omitted by default. Set `includeCitations: true` on contract list
-or get calls to return the uniform `ContractCitation` shape.
+joined recording/composition links as `linked_assets`. Set `citations: true` on
+contract list or get calls to return supporting `ContractCitation` objects.
 
 ### Contract Upload
 
@@ -419,9 +417,9 @@ const { data: contract } = await royaltyport.contracts.get(projectId, contractId
   includes: [
     'entities', 'artists', 'writers',
     'royalties', 'splits', 'costs', 'compensations',
-    'dates', 'accounting-periods', 'signatures',
-    'control-areas', 'creative-approvals', 'commitments', 'balances',
-    'recordings', 'compositions',
+    'dates', 'accounting-periods', 'types', 'signatures',
+    'control-areas', 'creative-approvals', 'commitments',
+    'recordings', 'compositions', 'relations',
   ],
 });
 ```

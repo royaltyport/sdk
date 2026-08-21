@@ -33,9 +33,9 @@ export type IncludeField =
   | 'control-areas'
   | 'creative-approvals'
   | 'commitments'
-  | 'balances'
   | 'recordings'
-  | 'compositions';
+  | 'compositions'
+  | 'relations';
 
 export interface ContractCommitmentDeliverable {
   type: string;
@@ -130,14 +130,14 @@ export interface ContractListOptions extends PaginationOptions {
   includes?: IncludeField[];
   extractorIds?: number[];
   score?: boolean;
-  includeCitations?: boolean;
+  citations?: boolean;
 }
 
 export interface ContractGetOptions {
   includes?: IncludeField[];
   extractorIds?: number[];
   score?: boolean;
-  includeCitations?: boolean;
+  citations?: boolean;
 }
 
 export interface ContractUploadOptions {

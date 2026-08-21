@@ -28,7 +28,7 @@ describe('Contracts', () => {
       includes: 'entities,royalties',
       extractorIds: undefined,
       score: undefined,
-      includeCitations: undefined,
+      citations: undefined,
     });
   });
 
@@ -45,7 +45,7 @@ describe('Contracts', () => {
       includes: undefined,
       extractorIds: undefined,
       score: undefined,
-      includeCitations: undefined,
+      citations: undefined,
     });
   });
 
@@ -60,7 +60,7 @@ describe('Contracts', () => {
       includes: 'dates,signatures',
       extractorIds: undefined,
       score: undefined,
-      includeCitations: undefined,
+      citations: undefined,
     });
   });
 
@@ -77,16 +77,16 @@ describe('Contracts', () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
 
-    await contracts.list('proj-1', { includes: ['commitments'], includeCitations: true });
-    await contracts.get('proj-1', 99, { includes: ['commitments'], includeCitations: true });
+    await contracts.list('proj-1', { includes: ['commitments'], citations: true });
+    await contracts.get('proj-1', 99, { includes: ['commitments'], citations: true });
 
     expect(http.get).toHaveBeenNthCalledWith(1, '/contracts', expect.objectContaining({
       includes: 'commitments',
-      includeCitations: 'true',
+      citations: 'true',
     }));
     expect(http.get).toHaveBeenNthCalledWith(2, '/contracts/99', expect.objectContaining({
       includes: 'commitments',
-      includeCitations: 'true',
+      citations: 'true',
     }));
   });
 

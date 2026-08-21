@@ -22,7 +22,7 @@ describe('Contracts (integration)', () => {
     const { data: listed } = await client.contracts.list(PROJECT_ID, {
       perPage: 1,
       includes: ['commitments'],
-      includeCitations: true,
+      citations: true,
     });
 
     expect(Array.isArray(listed.items[0]?.extractions?.commitments)).toBe(true);
@@ -31,7 +31,7 @@ describe('Contracts (integration)', () => {
 
     const { data: contract } = await client.contracts.get(PROJECT_ID, contractId, {
       includes: ['commitments'],
-      includeCitations: true,
+      citations: true,
     });
     for (const commitment of contract.extractions?.commitments ?? []) {
       expect(Array.isArray(commitment.linked_deliverables)).toBe(true);
