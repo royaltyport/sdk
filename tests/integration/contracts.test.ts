@@ -18,6 +18,40 @@ describe('Contracts (integration)', () => {
     expect(data).toHaveProperty('items');
   });
 
+  it('lists and gets typed commitments with automatic asset links', async () => {
+    const { data: listed } = await client.contracts.list(PROJECT_ID, {
+      perPage: 1,
+      includes: ['commitments'],
+      includeCitations: true,
+    });
+
+    expect(Array.isArray(listed.items[0]?.extractions?.commitments)).toBe(true);
+    const contractId = listed.items[0]?.id;
+    if (!contractId) return;
+
+    const { data: contract } = await client.contracts.get(PROJECT_ID, contractId, {
+      includes: ['commitments'],
+      includeCitations: true,
+    });
+    for (const commitment of contract.extractions?.commitments ?? []) {
+      expect(Array.isArray(commitment.linked_deliverables)).toBe(true);
+      expect(Array.isArray(commitment.citations)).toBe(true);
+      for (const citation of commitment.citations ?? []) {
+        expect(Object.keys(citation).sort()).toEqual([
+          'citation',
+          'field',
+          'page',
+          'section_number',
+          'section_structure',
+          'section_title',
+        ]);
+      }
+      expect(Array.isArray(commitment.linked_assets)).toBe(true);
+      expect(commitment).not.toHaveProperty('commitment_items');
+      expect(commitment).not.toHaveProperty('reconciliation_state');
+    }
+  });
+
   describe('upload -> get -> download -> processes', () => {
     let uploadedStagingId: number;
 

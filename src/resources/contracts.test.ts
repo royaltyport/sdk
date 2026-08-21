@@ -1,7 +1,8 @@
+import type { HttpClient } from '../http.js';
+import type { Contract } from '../types/contracts.js';
 import { describe, it, expect, vi } from 'vitest';
 import { Contracts } from './contracts.js';
 import { createMockHttp } from './test-helpers.js';
-import type { HttpClient } from '../http.js';
 
 function mockUploadFlow(http: HttpClient) {
   const rateLimit = { limit: 100, remaining: 99, reset: 0 };
@@ -27,6 +28,7 @@ describe('Contracts', () => {
       includes: 'entities,royalties',
       extractorIds: undefined,
       score: undefined,
+      includeCitations: undefined,
     });
   });
 
@@ -43,6 +45,7 @@ describe('Contracts', () => {
       includes: undefined,
       extractorIds: undefined,
       score: undefined,
+      includeCitations: undefined,
     });
   });
 
@@ -57,6 +60,7 @@ describe('Contracts', () => {
       includes: 'dates,signatures',
       extractorIds: undefined,
       score: undefined,
+      includeCitations: undefined,
     });
   });
 
@@ -67,6 +71,52 @@ describe('Contracts', () => {
     await contracts.get('proj-1', 99, { extractorIds: [201] });
     expect(http.get).toHaveBeenNthCalledWith(1, '/contracts', expect.objectContaining({ extractorIds: '201,202' }));
     expect(http.get).toHaveBeenNthCalledWith(2, '/contracts/99', expect.objectContaining({ extractorIds: '201' }));
+  });
+
+  it('serializes commitments on list and get', async () => {
+    const http = createMockHttp();
+    const contracts = new Contracts(http);
+
+    await contracts.list('proj-1', { includes: ['commitments'], includeCitations: true });
+    await contracts.get('proj-1', 99, { includes: ['commitments'], includeCitations: true });
+
+    expect(http.get).toHaveBeenNthCalledWith(1, '/contracts', expect.objectContaining({
+      includes: 'commitments',
+      includeCitations: 'true',
+    }));
+    expect(http.get).toHaveBeenNthCalledWith(2, '/contracts/99', expect.objectContaining({
+      includes: 'commitments',
+      includeCitations: 'true',
+    }));
+  });
+
+  it('types commitments with linked deliverables and automatically joined assets', () => {
+    const contract: Contract = {
+      id: 99,
+      internal_uuid: '11111111-1111-4111-8111-111111111111',
+      file_name: 'agreement.pdf',
+      file_type: 'application/pdf',
+      created_at: '2026-08-21T10:00:00Z',
+      extractions: {
+        commitments: [{
+          id: 12,
+          title: 'Initial Contract Period',
+          type: 'fixed',
+          linked_deliverables: [{ type: 'album', description: 'Studio album', quantity: 2, fulfilled: 1 }],
+          citations: [],
+          linked_assets: [{
+            id: 21,
+            type: 'recording',
+            contract_recording_id: 31,
+            recording_id: 41,
+            created_at: '2026-08-21T10:05:00Z',
+          }],
+        }],
+      },
+    };
+
+    expect(contract.extractions?.commitments?.[0]?.linked_deliverables[0]?.type).toBe('album');
+    expect(contract.extractions?.commitments?.[0]?.linked_assets[0]?.type).toBe('recording');
   });
 
   it('forwards score on list and get', async () => {

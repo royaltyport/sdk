@@ -168,6 +168,25 @@ const { data } = await royaltyport.contracts.list(projectId, {
 console.log(data.items[0]?.custom_extractions);
 ```
 
+Commitments are an opt-in contract include. Linked asset rows are joined
+automatically; reconciliation metadata is omitted:
+
+```ts
+const { data: contractWithCommitments } = await royaltyport.contracts.get(projectId, contractId, {
+  includes: ['commitments'],
+  includeCitations: true,
+});
+
+for (const commitment of contractWithCommitments.extractions?.commitments ?? []) {
+  console.log(commitment.linked_deliverables);
+  console.log(commitment.linked_assets);
+  console.log(commitment.citations);
+}
+```
+
+Citations are omitted by default. With `includeCitations: true`, each included
+extraction item receives a normalized `citations` array.
+
 If the flow fails after the file bytes reached storage, the SDK throws `RoyaltyportUploadError` with a `step` (`'put'` or `'complete'`) and the `stagingId`. On a `'complete'` failure the bytes are already stored — completion can be re-run manually via `POST /v1/{statements|contracts}/uploads/complete` with that `stagingId`.
 
 ## Error Handling

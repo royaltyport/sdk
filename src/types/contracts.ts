@@ -32,9 +32,82 @@ export type IncludeField =
   | 'signatures'
   | 'control-areas'
   | 'creative-approvals'
+  | 'commitments'
   | 'balances'
   | 'recordings'
   | 'compositions';
+
+export interface ContractCommitmentDeliverable {
+  type: string;
+  description: string;
+  quantity: number;
+  fulfilled: number;
+  [key: string]: unknown;
+}
+
+export type ContractCitationStructure =
+  | 'paragraph'
+  | 'document_header'
+  | 'document_footer'
+  | 'table'
+  | 'list_item'
+  | 'schedule'
+  | 'exhibit'
+  | 'addendum'
+  | 'other';
+
+export interface ContractCitation {
+  field: string | null;
+  page: number | null;
+  section_number: string | null;
+  section_title: string | null;
+  section_structure: ContractCitationStructure | null;
+  citation: string | null;
+}
+
+/** @deprecated Use ContractCitation. */
+export type ContractCommitmentCitation = ContractCitation;
+
+export type ContractCommitmentLinkedAsset = {
+  id: number;
+  source?: string;
+  created_at: string;
+  updated_at?: string;
+} & (
+  | {
+    type: 'recording';
+    contract_recording_id: number;
+    recording_id: number;
+    contract_composition_id?: never;
+    composition_id?: never;
+  }
+  | {
+    type: 'composition';
+    contract_composition_id: number;
+    composition_id: number;
+    contract_recording_id?: never;
+    recording_id?: never;
+  }
+);
+
+export interface ContractCommitment {
+  id: number;
+  title?: string;
+  type?: string;
+  description?: string;
+  recurring_unit?: string;
+  recurring_quantity?: string;
+  linked_deliverables: ContractCommitmentDeliverable[];
+  citations?: ContractCitation[];
+  created_at?: string;
+  updated_at?: string;
+  linked_assets: ContractCommitmentLinkedAsset[];
+}
+
+export interface ContractExtractions {
+  commitments?: ContractCommitment[];
+  [key: string]: unknown;
+}
 
 export interface Contract {
   id: number;
@@ -42,7 +115,7 @@ export interface Contract {
   file_name: string;
   file_type: string;
   created_at: string;
-  extractions?: Record<string, unknown>;
+  extractions?: ContractExtractions;
   custom_extractions?: CustomExtraction[];
   score?: ResourceScore;
 }
@@ -57,12 +130,14 @@ export interface ContractListOptions extends PaginationOptions {
   includes?: IncludeField[];
   extractorIds?: number[];
   score?: boolean;
+  includeCitations?: boolean;
 }
 
 export interface ContractGetOptions {
   includes?: IncludeField[];
   extractorIds?: number[];
   score?: boolean;
+  includeCitations?: boolean;
 }
 
 export interface ContractUploadOptions {

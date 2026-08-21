@@ -78,6 +78,13 @@ export type {
 export type {
   ExtractionId,
   IncludeField,
+  ContractCitationStructure,
+  ContractCitation,
+  ContractCommitmentDeliverable,
+  ContractCommitmentCitation,
+  ContractCommitmentLinkedAsset,
+  ContractCommitment,
+  ContractExtractions,
   Contract,
   ContractListOptions,
   ContractGetOptions,

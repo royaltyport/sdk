@@ -21,6 +21,7 @@ export class Contracts extends BaseResource {
       includes: options?.includes?.join(','),
       extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
+      includeCitations: options?.includeCitations?.toString(),
     });
   }
 
@@ -30,6 +31,7 @@ export class Contracts extends BaseResource {
       includes: options?.includes?.join(','),
       extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
+      includeCitations: options?.includeCitations?.toString(),
     });
   }
 
