@@ -80,8 +80,9 @@ const royaltyport = new Royaltyport({
 | `royaltyport.compositions` | `list`, `get` | Compositions (with products) |
 | `royaltyport.entities` | `list`, `get` | Entities (with merge history) |
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
-| `royaltyport.contracts` | `list`, `get`, `upload`, `download`, `processes`, `retryStaging` | Contracts with upload, download, scoring, and staging recovery |
-| `royaltyport.statements` | `list`, `get`, `upload`, `download`, `processes`, `retryStaging` | Statements with upload, download, scoring, and staging recovery |
+| `royaltyport.contracts` | `list`, `get`, `update`, `upload`, `download`, `processes`, `retryStaging` | Contracts with tag updates, upload, download, scoring, and staging recovery |
+| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `processes`, `retryStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
+| `royaltyport.tags` | `list`, `update` | Scoped contract and statement tags |
 | `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
 | `royaltyport.search()` | — | Cross-resource search |
 
@@ -196,6 +197,40 @@ const { data: contract } = await royaltyport.contracts.get(projectId, contractId
 console.log(contract.extractions?.languages);
 console.log(contract.extractions?.balances);
 console.log(contract.extractions?.targets);
+```
+
+## Updates and Tags
+
+Update a contract's complete tag list, or patch selected statement metadata:
+
+```ts
+await royaltyport.contracts.update(projectId, contractId, {
+  tags: ['Priority', 'Artist agreement'],
+});
+
+await royaltyport.statements.update(projectId, statementId, {
+  tags: ['Priority', 'Quarterly'],
+  payee: 'Ocean Wave Records Ltd',
+  accountingPeriod: '2026Q1',
+  currency: 'GBP',
+});
+```
+
+Tags are scoped separately to contracts and statements. `update()` replaces the
+complete list for one resource; pass an empty array to clear it.
+
+```ts
+const { data } = await royaltyport.tags.list(projectId, 'contracts', {
+  search: 'priority',
+  page: 1,
+  perPage: 100,
+});
+
+await royaltyport.tags.update(projectId, {
+  scope: 'contracts',
+  resourceId: contractId,
+  tags: ['Priority'],
+});
 ```
 
 If the flow fails after the file bytes reached storage, the SDK throws `RoyaltyportUploadError` with a `step` (`'put'` or `'complete'`) and the `stagingId`. On a `'complete'` failure the bytes are already stored — completion can be re-run manually via `POST /v1/{statements|contracts}/uploads/complete` with that `stagingId`.

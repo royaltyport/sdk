@@ -66,6 +66,24 @@ export class HttpClient {
     );
   }
 
+  async put<T>(
+    path: string,
+    body: unknown,
+    query?: Record<string, string | undefined>,
+    options?: PostOptions,
+  ): Promise<ApiResponse<T>> {
+    const url = this.buildUrl(path, query);
+    return this.requestWithRetry<T>(
+      url,
+      {
+        method: 'PUT',
+        headers: this.buildHeaders(),
+        body: JSON.stringify(body),
+      },
+      options?.retry ?? false,
+    );
+  }
+
   /**
    * PUT to an absolute external URL (e.g. a signed storage URL). Bypasses
    * buildUrl and sends no Authorization header — the URL authorizes itself.

@@ -112,6 +112,8 @@ export type {
   Contract,
   ContractListOptions,
   ContractGetOptions,
+  ContractUpdateInput,
+  ContractUpdateResult,
   ContractUploadOptions,
   ContractUploadResult,
   DownloadResult,
@@ -125,12 +127,23 @@ export type {
   StatementDetailedExport,
   StatementListOptions,
   StatementGetOptions,
+  StatementUpdateInput,
+  StatementUpdateResult,
   StatementExtractionStage,
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,
   StatementProcesses,
 } from './statements.js';
+
+export type {
+  TagScope,
+  Tag,
+  TagListOptions,
+  TagUpdateInput,
+  UpdatedTag,
+  TagUpdateResult,
+} from './tags.js';
 
 export type {
   SearchResult,

@@ -382,6 +382,16 @@ export interface ContractGetOptions {
   citations?: boolean;
 }
 
+export interface ContractUpdateInput {
+  /** Complete replacement tag-name list. Pass an empty array to clear all tags. */
+  tags: string[];
+}
+
+export interface ContractUpdateResult {
+  id: number;
+  tags: string[];
+}
+
 export interface ContractUploadOptions {
   fileName?: string;
   fileType?: string;

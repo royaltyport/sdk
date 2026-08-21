@@ -3,6 +3,8 @@ import type {
   Contract,
   ContractListOptions,
   ContractGetOptions,
+  ContractUpdateInput,
+  ContractUpdateResult,
   ContractUploadOptions,
   ContractUploadResult,
   DownloadResult,
@@ -33,6 +35,14 @@ export class Contracts extends BaseResource {
       score: options?.score?.toString(),
       citations: options?.citations?.toString(),
     });
+  }
+
+  async update(
+    projectId: string,
+    contractId: number | string,
+    input: ContractUpdateInput,
+  ): Promise<ApiResponse<ContractUpdateResult>> {
+    return this.http.put(`/contracts/${contractId}`, input, { projectId });
   }
 
   async upload(

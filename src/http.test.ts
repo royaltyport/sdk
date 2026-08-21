@@ -292,6 +292,33 @@ describe('HttpClient', () => {
     });
   });
 
+  describe('PUT', () => {
+    it('sends an authenticated JSON body and query parameters', async () => {
+      const fetchFn = vi.fn().mockResolvedValue(mockResponse({ data: { id: 42, tags: ['Priority'] } }));
+      const client = createClient(fetchFn);
+
+      await client.put('/contracts/42', { tags: ['Priority'] }, { projectId: 'proj-1' });
+
+      const [url, init] = fetchFn.mock.calls[0]!;
+      expect(new URL(url as string).searchParams.get('projectId')).toBe('proj-1');
+      expect((init as RequestInit).method).toBe('PUT');
+      expect((init as RequestInit).body).toBe('{"tags":["Priority"]}');
+      expect(((init as RequestInit).headers as Record<string, string>)['Authorization']).toBe('Bearer test-token');
+      expect(((init as RequestInit).headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    });
+
+    it('does not retry writes by default', async () => {
+      const fetchFn = vi.fn().mockResolvedValue(
+        mockResponse({ error: { message: 'Internal server error' } }, { status: 500 }),
+      );
+      const client = createClient(fetchFn, { retryDelay: 0 });
+
+      await expect(client.put('/tags', { scope: 'contracts', resourceId: 42, tags: [] }))
+        .rejects.toThrow(RoyaltyportError);
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('putExternal', () => {
     it('passes the absolute URL through untouched and sends no Authorization header', async () => {
       const fetchFn = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));

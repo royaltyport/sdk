@@ -53,6 +53,29 @@ describe('Statements', () => {
     expect(http.get).toHaveBeenCalledWith('/statements/77', { projectId: 'proj-1', detailed: 'true', score: undefined });
   });
 
+  it('updates selected statement metadata', async () => {
+    const http = createMockHttp();
+    const statements = new Statements(http);
+
+    await statements.update('proj-1', 77, {
+      tags: ['Quarterly'],
+      payee: 'Ocean Wave Records Ltd',
+      accountingPeriod: '2026Q1',
+      currency: 'GBP',
+    });
+
+    expect(http.put).toHaveBeenCalledWith(
+      '/statements/77',
+      {
+        tags: ['Quarterly'],
+        payee: 'Ocean Wave Records Ltd',
+        accountingPeriod: '2026Q1',
+        currency: 'GBP',
+      },
+      { projectId: 'proj-1' },
+    );
+  });
+
   it('upload runs the mint -> put -> complete flow', async () => {
     const http = createMockHttp();
     const rateLimit = { limit: 100, remaining: 99, reset: 0 };

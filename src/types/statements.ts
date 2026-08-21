@@ -72,6 +72,35 @@ export interface StatementGetOptions {
   score?: boolean;
 }
 
+export interface StatementUpdateInput {
+  /** Complete replacement tag-name list. Pass an empty array to clear all tags. */
+  tags?: string[];
+  /** Licensor name, or null to clear it. */
+  payee?: string | null;
+  /** Licensee name, or null to clear it. */
+  payor?: string | null;
+  /** Period such as 2026Y, 2026H1, 2026Q3, or 2026M11; null clears it. */
+  accountingPeriod?: string | null;
+  /** Target period in the same format as accountingPeriod; null clears it. */
+  targetPeriod?: string | null;
+  /** Three-letter transaction currency code, or null to clear it. */
+  currencyTx?: string | null;
+  /** Three-letter royalty currency code, or null to clear it. */
+  currency?: string | null;
+}
+
+export interface StatementUpdateResult {
+  id: number;
+  tags: string[];
+  payee: string | null;
+  payor: string | null;
+  accounting_period: string | null;
+  target_period: string | null;
+  currency_tx: string | null;
+  currency: string | null;
+  updated_at: string;
+}
+
 export interface StatementUploadOptions {
   fileName?: string;
   fileType?: string;

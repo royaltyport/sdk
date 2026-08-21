@@ -3,6 +3,8 @@ import type {
   Statement,
   StatementListOptions,
   StatementGetOptions,
+  StatementUpdateInput,
+  StatementUpdateResult,
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,
@@ -30,6 +32,14 @@ export class Statements extends BaseResource {
       detailed: options?.detailed?.toString(),
       score: options?.score?.toString(),
     });
+  }
+
+  async update(
+    projectId: string,
+    statementId: number,
+    input: StatementUpdateInput,
+  ): Promise<ApiResponse<StatementUpdateResult>> {
+    return this.http.put(`/statements/${statementId}`, input, { projectId });
   }
 
   async upload(

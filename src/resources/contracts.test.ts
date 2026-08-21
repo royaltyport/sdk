@@ -64,6 +64,21 @@ describe('Contracts', () => {
     });
   });
 
+  it('updates the complete contract tag list', async () => {
+    const http = createMockHttp();
+    const contracts = new Contracts(http);
+
+    await contracts.update('proj-1', '11111111-1111-4111-8111-111111111111', {
+      tags: ['Priority', 'Artist agreement'],
+    });
+
+    expect(http.put).toHaveBeenCalledWith(
+      '/contracts/11111111-1111-4111-8111-111111111111',
+      { tags: ['Priority', 'Artist agreement'] },
+      { projectId: 'proj-1' },
+    );
+  });
+
   it('forwards custom extractor IDs on list and get', async () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
