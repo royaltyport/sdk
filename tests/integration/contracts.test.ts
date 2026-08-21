@@ -12,10 +12,21 @@ describe('Contracts (integration)', () => {
 
   it('lists contracts with includes', async () => {
     const { data } = await client.contracts.list(PROJECT_ID, {
-      includes: ['entities', 'royalties'],
+      includes: ['entities', 'royalties', 'languages', 'balances'],
     });
 
     expect(data).toHaveProperty('items');
+    for (const contract of data.items) {
+      expect(Array.isArray(contract.extractions?.languages)).toBe(true);
+      expect(Array.isArray(contract.extractions?.balances)).toBe(true);
+      for (const language of contract.extractions?.languages ?? []) {
+        expect(typeof language.id).toBe('number');
+        expect(language).not.toHaveProperty('internal_id');
+        expect(typeof language.internal_uuid).toBe('string');
+        expect(typeof language.created_at).toBe('string');
+        expect(typeof language.updated_at).toBe('string');
+      }
+    }
   });
 
   it('lists and gets typed commitments with automatic asset links', async () => {
@@ -37,6 +48,10 @@ describe('Contracts (integration)', () => {
       citations: true,
     });
     for (const commitment of contract.extractions?.commitments ?? []) {
+      expect(commitment).not.toHaveProperty('internal_id');
+      expect(typeof commitment.internal_uuid).toBe('string');
+      expect(typeof commitment.created_at).toBe('string');
+      expect(typeof commitment.updated_at).toBe('string');
       expect(Array.isArray(commitment.linked_deliverables)).toBe(true);
       expect(Array.isArray(commitment.citations)).toBe(true);
       for (const citation of commitment.citations ?? []) {
@@ -65,7 +80,7 @@ describe('Contracts (integration)', () => {
 
       const { data } = await client.contracts.upload(PROJECT_ID, file, {
         fileName: 'sdk-test-contract.pdf',
-        extractions: ['extract-dates', 'extract-signatures'],
+        extractions: ['extract-dates', 'extract-signatures', 'extract-language'],
       });
 
       expect(typeof data.staging_id).toBe('number');

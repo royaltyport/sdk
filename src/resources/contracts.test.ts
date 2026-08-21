@@ -19,13 +19,13 @@ describe('Contracts', () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
 
-    await contracts.list('proj-1', { page: 1, perPage: 10, includes: ['entities', 'royalties'] });
+    await contracts.list('proj-1', { page: 1, perPage: 10, includes: ['entities', 'royalties', 'languages'] });
 
     expect(http.get).toHaveBeenCalledWith('/contracts', {
       projectId: 'proj-1',
       page: '1',
       perPage: '10',
-      includes: 'entities,royalties',
+      includes: 'entities,royalties,languages',
       extractorIds: undefined,
       score: undefined,
       citations: undefined,
@@ -100,8 +100,14 @@ describe('Contracts', () => {
       extractions: {
         commitments: [{
           id: 12,
+          internal_uuid: '22222222-2222-4222-8222-222222222222',
+          created_at: '2026-08-21T10:00:00Z',
+          updated_at: '2026-08-21T10:05:00Z',
           title: 'Initial Contract Period',
           type: 'fixed',
+          description: null,
+          recurring_unit: null,
+          recurring_quantity: null,
           linked_deliverables: [{ type: 'album', description: 'Studio album', quantity: 2, fulfilled: 1 }],
           citations: [],
           linked_assets: [{
@@ -110,6 +116,7 @@ describe('Contracts', () => {
             contract_recording_id: 31,
             recording_id: 41,
             created_at: '2026-08-21T10:05:00Z',
+            updated_at: '2026-08-21T10:05:00Z',
           }],
         }],
       },
@@ -169,13 +176,13 @@ describe('Contracts', () => {
 
     const blob = new Blob(['%PDF-1.4 pdf'], { type: 'application/pdf' });
     await contracts.upload('proj-1', blob, {
-      extractions: ['extract-royalties', 'extract-dates'],
+      extractions: ['extract-royalties', 'extract-dates', 'extract-language'],
     });
 
     expect(http.post).toHaveBeenNthCalledWith(
       1,
       '/contracts/uploads',
-      expect.objectContaining({ extractions: ['extract-royalties', 'extract-dates'] }),
+      expect.objectContaining({ extractions: ['extract-royalties', 'extract-dates', 'extract-language'] }),
       { projectId: 'proj-1' },
       { retry: false },
     );

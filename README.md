@@ -124,7 +124,7 @@ console.log(data.status, data.context_applied); // 'queued', true
 
 // Contracts, with optional extractions, folder, and tag names
 const { data: contract } = await royaltyport.contracts.upload(projectId, './contract.pdf', {
-  extractions: ['extract-dates', 'extract-royalties'],
+  extractions: ['extract-dates', 'extract-language', 'extract-royalties'],
   folderName: 'Ocean Wave/Agreements',
   context: { tags: ['Priority', 'Artist agreement'] },
 });
@@ -159,7 +159,8 @@ const { data } = await royaltyport.contracts.list(projectId, { score: true });
 ```
 
 Custom extractor results are also opt-in by numeric extractor ID. Each result
-contains the extractor ID, its current name, and the extracted data:
+contains `id`, `internal_uuid`, `created_at`, `updated_at`, the extractor ID,
+its current name, and the extracted data:
 
 ```js
 const { data } = await royaltyport.contracts.list(projectId, {
@@ -184,6 +185,18 @@ for (const commitment of contractWithCommitments.extractions?.commitments ?? [])
 ```
 
 With `citations: true`, extraction items include supporting citations.
+
+Contract languages, balances, and targets use the same include flow:
+
+```ts
+const { data: contract } = await royaltyport.contracts.get(projectId, contractId, {
+  includes: ['languages', 'balances', 'targets'],
+});
+
+console.log(contract.extractions?.languages);
+console.log(contract.extractions?.balances);
+console.log(contract.extractions?.targets);
+```
 
 If the flow fails after the file bytes reached storage, the SDK throws `RoyaltyportUploadError` with a `step` (`'put'` or `'complete'`) and the `stagingId`. On a `'complete'` failure the bytes are already stored — completion can be re-run manually via `POST /v1/{statements|contracts}/uploads/complete` with that `stagingId`.
 
