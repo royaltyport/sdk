@@ -81,7 +81,6 @@ export type {
   ContractCitationStructure,
   ContractCitation,
   ContractExtractionIdentity,
-  ContractCanonicalResourceIdentity,
   ContractEntity,
   ContractArtist,
   ContractWriter,

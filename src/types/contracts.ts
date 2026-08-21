@@ -77,11 +77,7 @@ export interface ContractExtractionIdentity {
   citations?: ContractCitation[];
 }
 
-export interface ContractCanonicalResourceIdentity extends ContractExtractionIdentity {
-  internal_id: string | null;
-}
-
-export interface ContractEntity extends ContractCanonicalResourceIdentity {
+export interface ContractEntity extends ContractExtractionIdentity {
   name: string;
   email: string | null;
   phone: string | null;
@@ -94,13 +90,13 @@ export interface ContractEntity extends ContractCanonicalResourceIdentity {
   behalf_of: string | null;
 }
 
-export interface ContractArtist extends ContractCanonicalResourceIdentity {
+export interface ContractArtist extends ContractExtractionIdentity {
   name: string;
   role: string | null;
   entity_id: number | null;
 }
 
-export interface ContractWriter extends ContractCanonicalResourceIdentity {
+export interface ContractWriter extends ContractExtractionIdentity {
   name: string;
   role: string | null;
   entity_id: number | null;
@@ -281,7 +277,7 @@ export interface ContractAssetIdentifier {
   source: string;
 }
 
-export interface ContractRecording extends ContractCanonicalResourceIdentity {
+export interface ContractRecording extends ContractExtractionIdentity {
   name: string | null;
   duration_ms: number | null;
   artists: unknown | null;
@@ -296,7 +292,7 @@ export interface ContractRecording extends ContractCanonicalResourceIdentity {
   contract_group_id: number | null;
 }
 
-export interface ContractComposition extends ContractCanonicalResourceIdentity {
+export interface ContractComposition extends ContractExtractionIdentity {
   name: string | null;
   writers: unknown | null;
   artists: unknown | null;
@@ -314,7 +310,7 @@ export interface ContractComposition extends ContractCanonicalResourceIdentity {
   contract_group_id: number | null;
 }
 
-export interface ContractRelation extends ContractCanonicalResourceIdentity {
+export interface ContractRelation extends ContractExtractionIdentity {
   name: string;
   email: string | null;
   phone: string | null;
