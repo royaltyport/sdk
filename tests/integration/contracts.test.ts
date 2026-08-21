@@ -25,7 +25,10 @@ describe('Contracts (integration)', () => {
       citations: true,
     });
 
-    expect(Array.isArray(listed.items[0]?.extractions?.commitments)).toBe(true);
+    expect(Array.isArray(listed.items)).toBe(true);
+    for (const listedContract of listed.items) {
+      expect(Array.isArray(listedContract.extractions?.commitments)).toBe(true);
+    }
     const contractId = listed.items[0]?.id;
     if (!contractId) return;
 
