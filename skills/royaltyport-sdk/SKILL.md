@@ -3,7 +3,7 @@ name: royaltyport-sdk
 description: Query and manage Royaltyport project data via the Node.js SDK. Use when working with music royalty contracts, statements, entities, artists, writers, relations, recordings, or compositions programmatically.
 metadata:
   author: royaltyport
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # Skill: Royaltyport SDK
@@ -216,6 +216,14 @@ for (const commitment of contract.extractions?.commitments ?? []) {
   console.log(commitment.citations);
 }
 
+// Page through one extraction independently (up to 250 items per page)
+const { data: recordings } = await royaltyport.contracts.listExtraction(
+  'project_id',
+  contractId,
+  'recordings',
+  { page: 2, perPage: 250, citations: true },
+);
+
 // Download a contract (returns a signed URL)
 const { data: download } = await royaltyport.contracts.download('project_id', contractId);
 console.log(download.url); // signed download URL
@@ -225,11 +233,14 @@ const { data: processes } = await royaltyport.contracts.processes('project_id', 
 console.log(processes.staging_done, processes.extraction_done);
 ```
 
-**Available include fields:** `entities`, `artists`, `writers`, `royalties`, `splits`, `costs`, `compensations`, `dates`, `accounting-periods`, `types`, `signatures`, `control-areas`, `creative-approvals`, `commitments`, `recordings`, `compositions`, `relations`. `relations` is available on `contracts.get()`.
+**Available include fields:** `entities`, `artists`, `writers`, `royalties`, `splits`, `costs`, `compensations`, `dates`, `accounting-periods`, `types`, `languages`, `signatures`, `control-areas`, `creative-approvals`, `commitments`, `balances`, `recordings`, `compositions`, `relations`, `targets`.
 
 Commitments expose extracted items as `linked_deliverables` and automatically
 joined recording/composition links as `linked_assets`. Set `citations: true` on
 contract list or get calls to return supporting `ContractCitation` objects.
+Embedded includes remain arrays capped at 100 items. Use `listExtraction()` when
+you need complete pagination; it returns `items`, `total_count`, `page`, and
+`per_page`.
 
 ### Contract Upload
 
@@ -417,9 +428,9 @@ const { data: contract } = await royaltyport.contracts.get(projectId, contractId
   includes: [
     'entities', 'artists', 'writers',
     'royalties', 'splits', 'costs', 'compensations',
-    'dates', 'accounting-periods', 'types', 'signatures',
+    'dates', 'accounting-periods', 'types', 'languages', 'signatures',
     'control-areas', 'creative-approvals', 'commitments',
-    'recordings', 'compositions', 'relations',
+    'balances', 'recordings', 'compositions', 'relations', 'targets',
   ],
 });
 ```
@@ -435,6 +446,21 @@ while (true) {
   allArtists.push(...data.items);
   if (allArtists.length >= data.total_count) break;
   page++;
+}
+
+let extractionPage = 1;
+const allRecordings = [];
+
+while (true) {
+  const { data } = await royaltyport.contracts.listExtraction(
+    projectId,
+    contractId,
+    'recordings',
+    { page: extractionPage, perPage: 250 },
+  );
+  allRecordings.push(...data.items);
+  if (allRecordings.length >= data.total_count) break;
+  extractionPage++;
 }
 ```
 
@@ -457,7 +483,7 @@ while (!done) {
 ## Tips
 
 - **Always destructure `{ data }`** from responses — every method returns `ApiResponse<T>`.
-- **Use `includes`** on contracts to fetch extracted data in a single call instead of separate requests.
+- **Use `includes`** for convenient embedded extraction arrays and `listExtraction()` for complete pagination.
 - **Use `includeMerged`** on artists, writers, entities, and relations to get dedup history.
 - **Use `includeProducts`** on recordings and compositions to get associated products.
 - **Parallelize independent requests** with `Promise.all()` for faster data gathering.

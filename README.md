@@ -80,7 +80,7 @@ const royaltyport = new Royaltyport({
 | `royaltyport.compositions` | `list`, `get` | Compositions (with products) |
 | `royaltyport.entities` | `list`, `get` | Entities (with merge history) |
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
-| `royaltyport.contracts` | `list`, `get`, `update`, `upload`, `download`, `processes`, `retryStaging` | Contracts with tag updates, upload, download, scoring, and staging recovery |
+| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `processes`, `retryStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
 | `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `processes`, `retryStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
 | `royaltyport.tags` | `list`, `update` | Scoped contract and statement tags |
 | `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
@@ -183,7 +183,18 @@ for (const commitment of contractWithCommitments.extractions?.commitments ?? [])
   console.log(commitment.linked_assets);
   console.log(commitment.citations);
 }
+
+const { data: recordings } = await royaltyport.contracts.listExtraction(
+  projectId,
+  contractId,
+  'recordings',
+  { page: 2, perPage: 250, citations: true },
+);
 ```
+
+`listExtraction` supports all contract include keys. Payment extractions use
+the existing public key `compensations`. Only the top-level items are paginated;
+nested arrays remain embedded and have no item-count cap added by this method.
 
 With `citations: true`, extraction items include supporting citations.
 

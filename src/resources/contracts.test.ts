@@ -64,6 +64,24 @@ describe('Contracts', () => {
     });
   });
 
+  it('pages one typed extraction independently', async () => {
+    const http = createMockHttp();
+    const contracts = new Contracts(http);
+
+    await contracts.listExtraction('proj-1', 99, 'recordings', {
+      page: 2,
+      perPage: 250,
+      citations: true,
+    });
+
+    expect(http.get).toHaveBeenCalledWith('/contracts/99/extractions/recordings', {
+      projectId: 'proj-1',
+      page: '2',
+      perPage: '250',
+      citations: 'true',
+    });
+  });
+
   it('updates the complete contract tag list', async () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);

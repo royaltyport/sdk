@@ -1,6 +1,9 @@
 import type { ApiResponse, PaginatedResult } from '../types/common.js';
 import type {
   Contract,
+  ContractExtractionMap,
+  ContractExtractionKey,
+  ContractExtractionListOptions,
   ContractListOptions,
   ContractGetOptions,
   ContractUpdateInput,
@@ -33,6 +36,20 @@ export class Contracts extends BaseResource {
       includes: options?.includes?.join(','),
       extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
+      citations: options?.citations?.toString(),
+    });
+  }
+
+  async listExtraction<K extends ContractExtractionKey>(
+    projectId: string,
+    contractId: number | string,
+    extraction: K,
+    options?: ContractExtractionListOptions,
+  ): Promise<ApiResponse<PaginatedResult<ContractExtractionMap[K]>>> {
+    return this.http.get(`/contracts/${contractId}/extractions/${extraction}`, {
+      projectId,
+      page: options?.page?.toString(),
+      perPage: options?.perPage?.toString(),
       citations: options?.citations?.toString(),
     });
   }
