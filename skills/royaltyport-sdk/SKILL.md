@@ -204,9 +204,9 @@ const { data } = await royaltyport.contracts.list('project_id', {
   extractorIds: [201, 202], // include selected custom extractor results
 });
 
-// Get a single contract with extracted data
+// Embedded extraction arrays remain available on list/get calls
 const { data: contract } = await royaltyport.contracts.get('project_id', contractId, {
-  includes: ['entities', 'artists', 'writers', 'royalties', 'splits', 'dates', 'commitments'],
+  includes: ['compositions', 'recordings', 'commitments'],
   citations: true,
 });
 
@@ -216,13 +216,15 @@ for (const commitment of contract.extractions?.commitments ?? []) {
   console.log(commitment.citations);
 }
 
-// Page through one extraction independently (up to 250 items per page)
+// Page a large or complete extraction collection independently
 const { data: recordings } = await royaltyport.contracts.listExtraction(
   'project_id',
   contractId,
   'recordings',
-  { page: 2, perPage: 250, citations: true },
+  { page: 1, perPage: 250, citations: true },
 );
+
+console.log(recordings.items, recordings.total_count);
 
 // Download a contract (returns a signed URL)
 const { data: download } = await royaltyport.contracts.download('project_id', contractId);
@@ -238,9 +240,15 @@ console.log(processes.staging_done, processes.extraction_done);
 Commitments expose extracted items as `linked_deliverables` and automatically
 joined recording/composition links as `linked_assets`. Set `citations: true` on
 contract list or get calls to return supporting `ContractCitation` objects.
-Embedded includes remain arrays capped at 100 items. Use `listExtraction()` when
-you need complete pagination; it returns `items`, `total_count`, `page`, and
-`per_page`.
+
+`includes` behavior is unchanged: every requested extraction remains an array
+under `contract.extractions`, capped at 100 items and without pagination
+metadata. For a large or complete collection, use `listExtraction()` from page
+1. It supports every contract extraction key, defaults to 100 items per page,
+accepts up to 250, and returns `items`, `total_count`, `page`, and `per_page`. Payment
+extractions use `compensations`. Only the top-level collection is paginated;
+nested arrays remain attached to each item and are not independently capped or
+paginated.
 
 ### Contract Upload
 
@@ -421,7 +429,7 @@ const { data: artist } = await royaltyport.artists.get(projectId, artistMatch.id
 });
 ```
 
-### Read a contract with all extracted terms
+### Read embedded contract extractions
 
 ```ts
 const { data: contract } = await royaltyport.contracts.get(projectId, contractId, {
@@ -434,6 +442,9 @@ const { data: contract } = await royaltyport.contracts.get(projectId, contractId
   ],
 });
 ```
+
+Each requested array is capped at 100 items. Use the paginated pattern below
+when the complete collection is required.
 
 ### Paginate through all records
 
@@ -483,7 +494,7 @@ while (!done) {
 ## Tips
 
 - **Always destructure `{ data }`** from responses — every method returns `ApiResponse<T>`.
-- **Use `includes`** for convenient embedded extraction arrays and `listExtraction()` for complete pagination.
+- **Use `includes`** for convenient embedded extraction arrays and `listExtraction()` from page 1 for large or complete collections.
 - **Use `includeMerged`** on artists, writers, entities, and relations to get dedup history.
 - **Use `includeProducts`** on recordings and compositions to get associated products.
 - **Parallelize independent requests** with `Promise.all()` for faster data gathering.

@@ -170,31 +170,57 @@ const { data } = await royaltyport.contracts.list(projectId, {
 console.log(data.items[0]?.custom_extractions);
 ```
 
-Commitments are an opt-in contract include:
+## Contract Extractions
+
+### Embedded extractions
+
+Existing `includes` behavior is unchanged. Use `contracts.list()` or
+`contracts.get()` when you want contract data and convenient embedded
+extraction arrays:
 
 ```ts
-const { data: contractWithCommitments } = await royaltyport.contracts.get(projectId, contractId, {
-  includes: ['commitments'],
+const { data: contract } = await royaltyport.contracts.get(projectId, contractId, {
+  includes: ['compositions', 'recordings', 'commitments'],
   citations: true,
 });
 
-for (const commitment of contractWithCommitments.extractions?.commitments ?? []) {
+console.log(contract.extractions?.compositions);
+console.log(contract.extractions?.recordings);
+
+for (const commitment of contract.extractions?.commitments ?? []) {
   console.log(commitment.linked_deliverables);
   console.log(commitment.linked_assets);
   console.log(commitment.citations);
 }
+```
 
+Each requested key remains an array under `contract.extractions`, capped at 100
+items and without pagination metadata.
+
+### Paginated extraction
+
+For a large or complete extraction collection, use `listExtraction()` from
+page 1. It supports every contract extraction key, defaults to 100 items per
+page, and accepts up to 250:
+
+```ts
 const { data: recordings } = await royaltyport.contracts.listExtraction(
   projectId,
   contractId,
   'recordings',
-  { page: 2, perPage: 250, citations: true },
+  { page: 1, perPage: 250, citations: true },
 );
+
+console.log(recordings.items);
+console.log(recordings.total_count);
+console.log(recordings.page);
+console.log(recordings.per_page);
 ```
 
-`listExtraction` supports all contract include keys. Payment extractions use
-the existing public key `compensations`. Only the top-level items are paginated;
-nested arrays remain embedded and have no item-count cap added by this method.
+The pagination envelope contains `items`, `total_count`, `page`, and
+`per_page`. Payment extractions use the public key `compensations`. Only the
+top-level extraction collection is paginated; nested arrays remain attached to
+each item and are not independently capped or paginated.
 
 With `citations: true`, extraction items include supporting citations.
 
