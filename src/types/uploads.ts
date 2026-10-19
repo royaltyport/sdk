@@ -83,6 +83,8 @@ export interface ContractUploadContext {
 export interface UploadResult {
   staging_id: number;
   status: UploadStatus;
+  /** Admission transition from this completion call; null means no new transition. */
+  processing_status?: 'queued' | 'paused' | null;
   file_path: string;
   context_applied: boolean;
   snapshot_hash?: string;
