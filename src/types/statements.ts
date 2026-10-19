@@ -1,3 +1,4 @@
+import type { DocumentProcessingState } from './resolutions.js';
 import type { PaginationOptions } from './common.js';
 import type { ResourceScore } from './scores.js';
 import type { StagingActionState } from './staging.js';
@@ -37,7 +38,7 @@ export interface Statement {
   score?: ResourceScore;
 }
 
-export type StatementExtractionStage = 'queued' | 'processing' | 'completed' | 'failed' | 'paused' | 'timed_out' | 'skipped';
+export type StatementExtractionStage = 'queued' | 'processing' | 'completed' | 'failed' | 'paused' | 'timed_out' | 'skipped' | 'finalizing' | 'cancelling' | 'cancelled';
 
 export interface StatementFinancials {
   currency: string;
@@ -117,7 +118,7 @@ export interface StatementDownloadResult {
   expiresIn: number;
 }
 
-export interface StatementProcesses extends StagingActionState {
+export interface StatementProcesses extends StagingActionState, DocumentProcessingState {
   staging_id: number;
   statement_id: number | null;
   staging_done: boolean;

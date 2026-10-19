@@ -28,6 +28,7 @@ export interface RateLimit {
 }
 
 export interface ApiResponse<T> {
+  meta?: Record<string, unknown>;
   data: T;
   rateLimit: RateLimit;
 }

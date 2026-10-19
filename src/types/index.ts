@@ -167,3 +167,5 @@ export type {
   KnowledgeSearchResult,
   KnowledgeSearchOptions,
 } from './knowledge.js';
+
+export type { DocumentProcessingState, ResolutionOptions, RetryStagingResolution, SplitAgreement, ApproveSplitResolution, ContractStagingResolution } from './resolutions.js';

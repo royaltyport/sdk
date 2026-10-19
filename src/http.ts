@@ -20,6 +20,8 @@ export interface HttpClientOptions {
 }
 
 export interface PostOptions {
+  /** Stable caller-provided key for durable decision replay. */
+  idempotencyKey?: string;
   /**
    * When false, neither response nor network failures are retried.
    * Use for requests that create state without an idempotency key.
@@ -59,7 +61,7 @@ export class HttpClient {
       url,
       {
         method: 'POST',
-        headers: this.buildHeaders(),
+        headers: { ...this.buildHeaders(), ...(options?.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}) },
         body: JSON.stringify(body),
       },
       options?.retry ?? true,
@@ -181,15 +183,17 @@ export class HttpClient {
       (body.message as string | undefined) ??
       `Request failed with status ${status}`;
 
+    const code = typeof error === 'object' && typeof error?.code === 'string' ? error.code : undefined;
+
     switch (status) {
       case 400:
-        throw new RoyaltyportValidationError(message, rateLimit, fields);
+        throw new RoyaltyportValidationError(message, rateLimit, fields, code);
       case 401:
-        throw new RoyaltyportAuthenticationError(message, rateLimit);
+        throw new RoyaltyportAuthenticationError(message, rateLimit, code);
       case 429:
-        throw new RoyaltyportRateLimitError(message, rateLimit);
+        throw new RoyaltyportRateLimitError(message, rateLimit, code);
       default:
-        throw new RoyaltyportError(message, status, rateLimit);
+        throw new RoyaltyportError(message, status, rateLimit, code);
     }
   }
 
@@ -214,7 +218,7 @@ export class HttpClient {
         }
 
         const body = await this.parseBody(res);
-        return { data: body.data as T, rateLimit };
+        return { data: body.data as T, rateLimit, ...(body.meta && typeof body.meta === 'object' ? { meta: body.meta as Record<string, unknown> } : {}) };
       } catch (err) {
         if (err instanceof RoyaltyportError) throw err;
 

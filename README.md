@@ -320,3 +320,51 @@ The skill covers client setup, resource queries, file uploads, search patterns, 
 ## License
 
 MIT
+
+
+### Resolve a paused document
+
+The document-resolution endpoints are additive and require the matching API update.
+Read processing status first and submit its current `pause.id` (or `pause_id`).
+Use one stable idempotency key per decision. If a request times out, retry the
+same key and payload; a different payload under that key returns HTTP 409.
+HTTP 202 means accepted for background dispatch; HTTP 200 can mean capacity
+is still full. Continue reading the stable `/processes` URL and use the
+source-wide `status`, `terminal`, and `poll_after_seconds` fields. A paused or
+unknown source is not a signal to poll forever. Existing retry methods remain
+available for older integrations.
+
+```ts
+const result = await royaltyport.contracts.resolveStaging(
+  projectId,
+  stagingId,
+  { pause_id: pauseId, action: 'retry', input: {} },
+  { idempotencyKey: 'juniper-capacity-decision-1' },
+);
+console.log(result.data.status, result.meta?.decision_id);
+
+// Statements expose the same method for capacity retry.
+await royaltyport.statements.resolveStaging(
+  projectId, stagingId,
+  { pause_id: pauseId, action: 'retry', input: {} },
+  { idempotencyKey: 'juniper-statement-decision-1' },
+);
+
+// Contract-only split approval. Page numbers are inclusive and one-based.
+await royaltyport.contracts.resolveStaging(
+  projectId, stagingId,
+  {
+    pause_id: pauseId,
+    action: 'approve_split',
+    input: { agreements: [
+      { title: 'Recording agreement', start_page: 1, end_page: 4, process: true },
+      { title: 'Publishing agreement', start_page: 5, end_page: 8, process: true },
+    ] },
+  },
+  { idempotencyKey: 'juniper-split-decision-1' },
+);
+```
+
+Transport retries preserve the original key and JSON bytes. The SDK never
+generates a replacement key. Resolution decision metadata is exposed through
+`result.meta`, alongside the unchanged `data` and `rateLimit` properties.

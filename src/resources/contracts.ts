@@ -1,3 +1,4 @@
+import type { ContractStagingResolution, ResolutionOptions } from '../types/resolutions.js';
 import type { ApiResponse, PaginatedResult } from '../types/common.js';
 import type {
   Contract,
@@ -76,6 +77,14 @@ export class Contracts extends BaseResource {
 
   async processes(projectId: string, id: number): Promise<ApiResponse<ContractProcesses>> {
     return this.http.get(`/contracts/${id}/processes`, { projectId });
+  }
+
+  /** Resolve the currently observed pause. Reuse the same key and payload on retries. */
+  async resolveStaging(projectId: string, stagingId: number, input: ContractStagingResolution, options: ResolutionOptions): Promise<ApiResponse<ContractProcesses>> {
+    if (!options || typeof options.idempotencyKey !== 'string' || !/^[\x21-\x7e]{1,200}$/.test(options.idempotencyKey)) {
+      throw new Error('idempotencyKey must contain 1–200 printable non-whitespace ASCII characters');
+    }
+    return this.http.post(`/contracts/staging/${stagingId}/resolve`, input, { projectId }, { idempotencyKey: options.idempotencyKey });
   }
 
   async retryStaging(projectId: string, stagingId: number): Promise<ApiResponse<StagingActionResult>> {
