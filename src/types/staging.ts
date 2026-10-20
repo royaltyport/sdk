@@ -4,8 +4,8 @@ export interface StagingActionResult {
   staging_id: number;
   status: 'queued' | 'paused';
   enqueued?: number;
-  current_count?: number | null;
-  limit?: number | null;
+  usage_meter?: number | null;
+  usage_limit?: number | null;
 }
 
 export interface StagingActionState {

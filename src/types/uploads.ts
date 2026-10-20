@@ -83,6 +83,10 @@ export interface ContractUploadContext {
 export interface UploadResult {
   staging_id: number;
   status: UploadStatus;
+  /** Document usage counted against capacity at admission. */
+  usage_meter?: number | null;
+  /** Maximum permitted document usage. */
+  usage_limit?: number | null;
   /** Admission transition from this completion call; null means no new transition. */
   processing_status?: 'queued' | 'paused' | null;
   file_path: string;
