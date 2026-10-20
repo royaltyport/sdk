@@ -32,6 +32,7 @@ export class Royaltyport {
 
   constructor(config: RoyaltyportConfig) {
     this._http = new HttpClient({
+      ...(config.apiVersion && { apiVersion: config.apiVersion }),
       baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
       token: config.apiKey,
       fetch: config.fetch ?? globalThis.fetch,

@@ -15,7 +15,7 @@ import { Knowledge } from './resources/knowledge.js';
 function mockResponse(body: unknown) {
   return new Response(JSON.stringify(body), {
     status: 200,
-    headers: new Headers(),
+    headers: new Headers({ 'Royaltyport-Version': '2026-10-20.birch' }),
   });
 }
 

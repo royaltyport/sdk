@@ -167,5 +167,6 @@ export async function runUploadFlow({
   return {
     data: { ...done.data, staging_id, file_path },
     rateLimit: done.rateLimit,
+    apiVersion: done.apiVersion,
   };
 }

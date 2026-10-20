@@ -368,3 +368,32 @@ await royaltyport.contracts.resolveStaging(
 Transport retries preserve the original key and JSON bytes. The SDK never
 generates a replacement key. Resolution decision metadata is exposed through
 `result.meta`, alongside the unchanged `data` and `rateLimit` properties.
+
+## API release pin
+
+This unpublished candidate is typed for `2026-10-20.birch`; it is intended for
+a new SDK major when published. The API release is independent of SDK SemVer
+and the `/v1` URL namespace. Existing installed SDK packages without the
+header retain the server's Aster contract.
+
+```ts
+import { Royaltyport, API_RELEASE } from '@royaltyport/sdk';
+
+const royaltyport = new Royaltyport({
+  apiKey: process.env.ROYALTYPORT_API_KEY!,
+  apiVersion: API_RELEASE, // optional; this exact Birch release is the default
+});
+const response = await royaltyport.projects.list();
+console.log(response.apiVersion);
+```
+
+Every API request, including retries and polling, sends `Royaltyport-Version`.
+Successful responses must confirm the exact selected release; a missing or
+mismatched response header raises `api_version_mismatch` without retrying.
+Authentication and invalid-selector errors may precede release resolution.
+Signed Storage requests carry neither the API release nor API credentials.
+
+The configuration deliberately accepts only the exact release matching these
+TypeScript declarations. Use an Aster SDK package or raw versioned HTTP for
+Aster; passing an arbitrary release string with Birch response types would be
+unsafe. Package publication and API activation remain separate release steps.

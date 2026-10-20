@@ -1,6 +1,10 @@
+import type { ApiVersion } from '../versioning.js';
+
 export interface RoyaltyportConfig {
   /** API key or OAuth access token */
   apiKey: string;
+  /** Exact release supported by these result types. Older SDK releases retain Aster. */
+  apiVersion?: ApiVersion;
   /** Base URL for the API. Defaults to 'https://api.royaltyport.com' */
   baseUrl?: string;
   /** Custom fetch implementation for testing or proxying */
@@ -28,6 +32,8 @@ export interface RateLimit {
 }
 
 export interface ApiResponse<T> {
+  /** Resolved API contract, checked against this client’s pin. */
+  apiVersion: ApiVersion;
   meta?: Record<string, unknown>;
   data: T;
   rateLimit: RateLimit;

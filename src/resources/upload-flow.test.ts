@@ -16,7 +16,7 @@ const FILE_PATH = 'proj-1/statements_staging/internal-id';
 const RATE_HEADERS = { 'X-RateLimit-Limit': '10', 'X-RateLimit-Remaining': '9', 'X-RateLimit-Reset': '1' };
 
 function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = RATE_HEADERS) {
-  return new Response(JSON.stringify(body), { status, headers: new Headers(headers) });
+  return new Response(JSON.stringify(body), { status, headers: new Headers({ 'Royaltyport-Version': '2026-10-20.birch', ...headers }) });
 }
 
 function mintResponse(stagingId = 123) {
