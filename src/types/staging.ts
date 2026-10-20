@@ -9,8 +9,5 @@ export interface StagingActionResult {
 }
 
 export interface StagingActionState {
-  staging_terminal: boolean;
-  requires_action: boolean;
-  available_actions: StagingAvailableAction[];
   pause_reason: string | null;
 }
