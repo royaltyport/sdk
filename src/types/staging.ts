@@ -1,3 +1,5 @@
+import type { DocumentProcessingState } from './resolutions.js';
+
 export type StagingAvailableAction = 'retry';
 
 export interface StagingActionResult {
@@ -8,6 +10,4 @@ export interface StagingActionResult {
   usage_limit?: number | null;
 }
 
-export interface StagingActionState {
-  pause_reason: string | null;
-}
+export type StagingActionState = Pick<DocumentProcessingState, 'pause'>;
