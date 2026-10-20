@@ -119,7 +119,8 @@ describe('upload flow orchestration', () => {
       .mockResolvedValueOnce(jsonResponse({
         data: {
           staging_id: 123,
-          status: 'queued',
+          status: 'uploaded',
+          processing_status: 'queued',
           context_applied: true,
           snapshot_hash: 'a'.repeat(64),
           enqueued: 1,
@@ -164,7 +165,8 @@ describe('upload flow orchestration', () => {
     });
     expect(result.data).toEqual({
       staging_id: 123,
-      status: 'queued',
+      status: 'uploaded',
+      processing_status: 'queued',
       file_path: FILE_PATH,
       context_applied: true,
       snapshot_hash: 'a'.repeat(64),

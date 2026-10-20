@@ -1,4 +1,5 @@
-export type UploadStatus = 'uploaded' | 'queued' | 'paused';
+/** Successful upload completion; use processing_status for admission. */
+export type UploadStatus = 'uploaded';
 
 export interface UploadPeriod {
   value: string;
