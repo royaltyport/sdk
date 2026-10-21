@@ -9,7 +9,7 @@ import {
 
 function mockResponse(body: unknown, init: { status?: number; headers?: Record<string, string> } = {}) {
   const status = init.status ?? 200;
-  const headers = new Headers(init.headers);
+  const headers = new Headers({ 'Royaltyport-Version': '2026-10-20.birch', ...init.headers });
   return new Response(JSON.stringify(body), { status, headers });
 }
 

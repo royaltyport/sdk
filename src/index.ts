@@ -1,3 +1,5 @@
+export { API_RELEASE, API_VERSION_HEADER } from './versioning.js';
+export type { ApiVersion } from './versioning.js';
 export { Royaltyport } from './client.js';
 
 export {

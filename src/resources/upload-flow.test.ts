@@ -16,7 +16,7 @@ const FILE_PATH = 'proj-1/statements_staging/internal-id';
 const RATE_HEADERS = { 'X-RateLimit-Limit': '10', 'X-RateLimit-Remaining': '9', 'X-RateLimit-Reset': '1' };
 
 function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = RATE_HEADERS) {
-  return new Response(JSON.stringify(body), { status, headers: new Headers(headers) });
+  return new Response(JSON.stringify(body), { status, headers: new Headers({ 'Royaltyport-Version': '2026-10-20.birch', ...headers }) });
 }
 
 function mintResponse(stagingId = 123) {
@@ -119,7 +119,8 @@ describe('upload flow orchestration', () => {
       .mockResolvedValueOnce(jsonResponse({
         data: {
           staging_id: 123,
-          status: 'queued',
+          status: 'uploaded',
+          processing_status: 'queued',
           context_applied: true,
           snapshot_hash: 'a'.repeat(64),
           enqueued: 1,
@@ -164,7 +165,8 @@ describe('upload flow orchestration', () => {
     });
     expect(result.data).toEqual({
       staging_id: 123,
-      status: 'queued',
+      status: 'uploaded',
+      processing_status: 'queued',
       file_path: FILE_PATH,
       context_applied: true,
       snapshot_hash: 'a'.repeat(64),

@@ -14,7 +14,6 @@ export type {
 } from './projects.js';
 
 export type { ScoreBuckets, ScoreSummary, TriggeredScoreRule, ResourceScore } from './scores.js';
-export type { StagingAvailableAction, StagingActionResult, StagingActionState } from './staging.js';
 export type {
   UploadStatus,
   UploadPeriod,
@@ -167,3 +166,5 @@ export type {
   KnowledgeSearchResult,
   KnowledgeSearchOptions,
 } from './knowledge.js';
+
+export type { DocumentProcessingState, ResolutionOptions, RetryStagingResolution, SplitAgreement, ApproveSplitResolution, ContractStagingResolution } from './resolutions.js';

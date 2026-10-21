@@ -1,3 +1,4 @@
+import { API_RELEASE, API_VERSION_HEADER, type ApiVersion } from './versioning.js';
 import type { ApiResponse, RateLimit } from './types/common.js';
 import {
   RoyaltyportError,
@@ -6,12 +7,13 @@ import {
   RoyaltyportValidationError,
 } from './errors.js';
 
-const API_VERSION = '/v1';
+const API_PATH_PREFIX = '/v1';
 const API_MAX_RETRIES = 3;
 const API_MAX_RETRY_DELAY = 60_000;
 const API_RETRY_DELAY = 500;
 
 export interface HttpClientOptions {
+  apiVersion?: ApiVersion;
   baseUrl: string;
   token: string;
   fetch: typeof globalThis.fetch;
@@ -20,6 +22,8 @@ export interface HttpClientOptions {
 }
 
 export interface PostOptions {
+  /** Stable caller-provided key for durable decision replay. */
+  idempotencyKey?: string;
   /**
    * When false, neither response nor network failures are retried.
    * Use for requests that create state without an idempotency key.
@@ -28,12 +32,17 @@ export interface PostOptions {
 }
 
 export class HttpClient {
+  readonly apiVersion: ApiVersion;
   private readonly baseUrl: string;
   private readonly token: string;
   private readonly _fetch: typeof globalThis.fetch;
   private readonly initialRetryDelay: number;
 
   constructor(options: HttpClientOptions) {
+    if (options.apiVersion !== undefined && options.apiVersion !== API_RELEASE) {
+      throw new RoyaltyportError(`This SDK supports only ${API_RELEASE}. Use the SDK release for the requested API family.`, 0, undefined, 'unsupported_api_version');
+    }
+    this.apiVersion = options.apiVersion ?? API_RELEASE;
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
     this.token = options.token;
     this._fetch = options.fetch;
@@ -59,7 +68,7 @@ export class HttpClient {
       url,
       {
         method: 'POST',
-        headers: this.buildHeaders(),
+        headers: { ...this.buildHeaders(), ...(options?.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}) },
         body: JSON.stringify(body),
       },
       options?.retry ?? true,
@@ -124,7 +133,7 @@ export class HttpClient {
   }
 
   private buildUrl(path: string, query?: Record<string, string | undefined>): string {
-    const url = new URL(`${API_VERSION}${path}`, this.baseUrl);
+    const url = new URL(`${API_PATH_PREFIX}${path}`, this.baseUrl);
 
     if (query) {
       for (const [key, value] of Object.entries(query)) {
@@ -139,6 +148,7 @@ export class HttpClient {
 
   private buildHeaders(): Record<string, string> {
     return {
+      [API_VERSION_HEADER]: this.apiVersion,
       'Authorization': `Bearer ${this.token}`,
       'Content-Type': 'application/json',
     };
@@ -181,15 +191,17 @@ export class HttpClient {
       (body.message as string | undefined) ??
       `Request failed with status ${status}`;
 
+    const code = typeof error === 'object' && typeof error?.code === 'string' ? error.code : undefined;
+
     switch (status) {
       case 400:
-        throw new RoyaltyportValidationError(message, rateLimit, fields);
+        throw new RoyaltyportValidationError(message, rateLimit, fields, code);
       case 401:
-        throw new RoyaltyportAuthenticationError(message, rateLimit);
+        throw new RoyaltyportAuthenticationError(message, rateLimit, code);
       case 429:
-        throw new RoyaltyportRateLimitError(message, rateLimit);
+        throw new RoyaltyportRateLimitError(message, rateLimit, code);
       default:
-        throw new RoyaltyportError(message, status, rateLimit);
+        throw new RoyaltyportError(message, status, rateLimit, code);
     }
   }
 
@@ -200,6 +212,11 @@ export class HttpClient {
       try {
         const res = await this._fetch(url, init);
         const rateLimit = this.parseRateLimit(res.headers);
+        const resolvedVersion = res.headers.get(API_VERSION_HEADER);
+        // Invalid-selector/authentication errors can precede version resolution.
+        if ((res.ok || resolvedVersion !== null) && resolvedVersion !== this.apiVersion) {
+          throw new RoyaltyportError(`Expected API release ${this.apiVersion}, received ${resolvedVersion ?? 'no release header'}.`, res.status, rateLimit, 'api_version_mismatch');
+        }
 
         if (!res.ok) {
           const body = await this.parseBody(res);
@@ -214,7 +231,7 @@ export class HttpClient {
         }
 
         const body = await this.parseBody(res);
-        return { data: body.data as T, rateLimit };
+        return { apiVersion: this.apiVersion, data: body.data as T, rateLimit, ...(body.meta && typeof body.meta === 'object' ? { meta: body.meta as Record<string, unknown> } : {}) };
       } catch (err) {
         if (err instanceof RoyaltyportError) throw err;
 

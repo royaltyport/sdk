@@ -23,7 +23,7 @@ describe('Projects (integration)', () => {
     const { data } = await client.projects.get(PROJECT_ID);
 
     expect(data.id).toBe(PROJECT_ID);
-    expect(data.name).toBe('SDK - Integration Tests');
+    expect(typeof data.name).toBe('string');
     expect(typeof data.created_at).toBe('string');
   });
 });

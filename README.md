@@ -80,8 +80,8 @@ const royaltyport = new Royaltyport({
 | `royaltyport.compositions` | `list`, `get` | Compositions (with products) |
 | `royaltyport.entities` | `list`, `get` | Entities (with merge history) |
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
-| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `processes`, `retryStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
-| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `processes`, `retryStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
+| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `processes`, `resolveStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
+| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `processes`, `resolveStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
 | `royaltyport.tags` | `list`, `update` | Scoped contract and statement tags |
 | `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
 | `royaltyport.search()` | — | Cross-resource search |
@@ -138,20 +138,28 @@ not accepted. Tags are names, not IDs.
 Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `processes()` for staging progress instead:
 
 Supplying `folderName` or `context` seals the metadata immediately and skips the
-review step. Contextual results have `status: 'queued' | 'paused'`,
-`context_applied: true`, and include the immutable `snapshot_hash` plus queue
-counts. Context-free uploads retain `status: 'uploaded'`.
+review step. Successful uploads return `status: 'uploaded'`. `processing_status`
+reports admission as `queued`, `paused`, or null; poll the upload for current state.
+Contextual results include `context_applied: true`, the immutable `snapshot_hash` and queue counts.
 
 ```js
 const { data: status } = await royaltyport.statements.processes(projectId, data.staging_id);
 ```
 
-When `status.requires_action` is true, inspect `available_actions` and
-`pause_reason`, then retry a capacity pause:
+When `status.status === 'paused'`, inspect `pause.actions`. Resolve a supported
+capacity pause with its current UUID and a stable idempotency key:
 
 ```js
-await royaltyport.statements.retryStaging(projectId, stagingId);
+await royaltyport.statements.resolveStaging(projectId, stagingId, {
+  pause_id: status.pause.id,
+  action: 'retry',
+  input: {},
+}, { idempotencyKey: 'one-stable-key-for-this-decision' });
 ```
+
+Use source-wide `status` and `terminal` for lifecycle decisions. Results live in
+`resources[]`; each `document_processes[]` entry has its own extraction details.
+The old singleton fields and `/retry` operation are Aster-only and absent from this Birch SDK.
 
 Score data is opt-in on contract and statement list/detail calls:
 
@@ -320,3 +328,90 @@ The skill covers client setup, resource queries, file uploads, search patterns, 
 ## License
 
 MIT
+
+
+### Resolve a paused document
+
+The document-resolution endpoints are additive and require the matching API update.
+Read processing status first and submit its current `pause.id` (or `pause_id`).
+Use one stable idempotency key per decision. If a request times out, retry the
+same key and payload; a different payload under that key returns HTTP 409.
+HTTP 202 means accepted for background dispatch; HTTP 200 can mean capacity
+is still full. Continue reading the stable `/processes` URL and use the
+source-wide `status`, `terminal`, and `poll_after_seconds` fields. A paused or
+unknown source is not a signal to poll forever. Existing retry methods remain
+available for older integrations.
+
+```ts
+const result = await royaltyport.contracts.resolveStaging(
+  projectId,
+  stagingId,
+  { pause_id: pauseId, action: 'retry', input: {} },
+  { idempotencyKey: 'juniper-capacity-decision-1' },
+);
+console.log(result.data.status, result.meta?.decision_id);
+
+// Statements expose the same method for capacity retry.
+await royaltyport.statements.resolveStaging(
+  projectId, stagingId,
+  { pause_id: pauseId, action: 'retry', input: {} },
+  { idempotencyKey: 'juniper-statement-decision-1' },
+);
+
+// Contract-only split approval. Page numbers are inclusive and one-based.
+await royaltyport.contracts.resolveStaging(
+  projectId, stagingId,
+  {
+    pause_id: pauseId,
+    action: 'approve_split',
+    input: { agreements: [
+      { title: 'Recording agreement', start_page: 1, end_page: 4, process: true },
+      { title: 'Publishing agreement', start_page: 5, end_page: 8, process: true },
+    ] },
+  },
+  { idempotencyKey: 'juniper-split-decision-1' },
+);
+```
+
+Transport retries preserve the original key and JSON bytes. The SDK never
+generates a replacement key. Resolution decision metadata is exposed through
+`result.meta`, alongside the unchanged `data` and `rateLimit` properties.
+
+## API release pin
+
+SDK 1.0 is typed for `2026-10-20.birch` and selects it by default. The API release is independent of SDK SemVer
+and the `/v1` URL namespace. Existing installed SDK packages without the
+header retain the server's Aster contract.
+
+```ts
+import { Royaltyport, API_RELEASE } from '@royaltyport/sdk';
+
+const royaltyport = new Royaltyport({
+  apiKey: process.env.ROYALTYPORT_API_KEY!,
+  apiVersion: API_RELEASE, // optional; this exact Birch release is the default
+});
+const response = await royaltyport.projects.list();
+console.log(response.apiVersion);
+```
+
+Every API request, including retries and polling, sends `Royaltyport-Version`.
+Successful responses must confirm the exact selected release; a missing or
+mismatched response header raises `api_version_mismatch` without retrying.
+Authentication and invalid-selector errors may precede release resolution.
+Signed Storage requests carry neither the API release nor API credentials.
+
+The configuration deliberately accepts only the exact release matching these
+TypeScript declarations. Use an Aster SDK package or raw versioned HTTP for
+Aster; passing an arbitrary release string with Birch response types would be
+unsafe. See [the changelog](CHANGELOG.md) for the migration from SDK 0.8.
+
+
+### Hosted integration environment
+
+Client CI uses the GitHub `Staging` environment. Configure its `ROYALTYPORT_TEST_BASE_URL`
+and `ROYALTYPORT_TEST_PROJECT_ID` variables and its `ROYALTYPORT_TEST_API_KEY` and
+`ROYALTYPORT_TEST_PROTECTION_BYPASS` secrets. The API key is scoped to a synthetic
+Staging project. Tests refuse missing configuration, Production targets and hosted
+loopback fallbacks. Protection credentials are sent only to the Staging API origin;
+Storage transfers receive no API credentials. Local integration tests require explicit
+loopback URL, project and key. No Production fixture is a default.

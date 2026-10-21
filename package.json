@@ -1,6 +1,6 @@
 {
   "name": "@royaltyport/sdk",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Official Node.js SDK for the Royaltyport API",
   "exports": {
@@ -12,7 +12,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=18.0.0"
@@ -28,8 +29,8 @@
     "lint": "eslint",
     "link:sdk": "sh scripts/link.sh",
     "unlink:sdk": "sh scripts/unlink.sh",
-    "publish:sdk": "sh scripts/publish.sh",
-    "publish:beta": "sh scripts/publish-beta.sh",
+    "publish:sdk": "npm publish --access public",
+    "publish:beta": "npm publish --access public --tag beta",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
@@ -45,5 +46,12 @@
     "royalties",
     "api"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/royaltyport/sdk.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }
