@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { Royaltyport, RoyaltyportAuthenticationError, RoyaltyportError } from '../../src/index.js';
-import { PROJECT_ID } from './setup.js';
+import { BASE_URL } from './setup.js';
 
 describe('Error handling (integration)', () => {
   it('throws RoyaltyportAuthenticationError with invalid token', async () => {
-    const badClient = new Royaltyport({ apiKey: 'rp_invalid_token_12345' });
+    const badClient = new Royaltyport({ apiKey: 'rp_invalid_token_12345', baseUrl: BASE_URL });
 
     await expect(badClient.projects.list()).rejects.toThrow(RoyaltyportAuthenticationError);
   });
 
   it('throws RoyaltyportError when project not found', async () => {
-    const badClient = new Royaltyport({ apiKey: 'rp_invalid_token_12345' });
+    const badClient = new Royaltyport({ apiKey: 'rp_invalid_token_12345', baseUrl: BASE_URL });
 
     await expect(
       badClient.artists.list('00000000-0000-0000-0000-000000000000'),
@@ -18,7 +18,7 @@ describe('Error handling (integration)', () => {
   });
 
   it('error includes status code and message', async () => {
-    const badClient = new Royaltyport({ apiKey: 'rp_invalid_token_12345' });
+    const badClient = new Royaltyport({ apiKey: 'rp_invalid_token_12345', baseUrl: BASE_URL });
 
     try {
       await badClient.projects.list();

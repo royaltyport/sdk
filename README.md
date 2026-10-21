@@ -405,3 +405,14 @@ The configuration deliberately accepts only the exact release matching these
 TypeScript declarations. Use an Aster SDK package or raw versioned HTTP for
 Aster; passing an arbitrary release string with Birch response types would be
 unsafe. Package publication and API activation remain separate release steps.
+
+
+### Hosted integration environment
+
+Client CI uses the GitHub `Staging` environment. Configure its `ROYALTYPORT_TEST_BASE_URL`
+and `ROYALTYPORT_TEST_PROJECT_ID` variables and its `ROYALTYPORT_TEST_API_KEY` and
+`ROYALTYPORT_TEST_PROTECTION_BYPASS` secrets. The API key is scoped to a synthetic
+Staging project. Tests refuse missing configuration, Production targets and hosted
+loopback fallbacks. Protection credentials are sent only to the Staging API origin;
+Storage transfers receive no API credentials. Local integration tests require explicit
+loopback URL, project and key. No Production fixture is a default.
