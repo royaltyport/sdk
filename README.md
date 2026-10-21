@@ -379,8 +379,7 @@ generates a replacement key. Resolution decision metadata is exposed through
 
 ## API release pin
 
-This unpublished candidate is typed for `2026-10-20.birch`; it is intended for
-a new SDK major when published. The API release is independent of SDK SemVer
+SDK 1.0 is typed for `2026-10-20.birch` and selects it by default. The API release is independent of SDK SemVer
 and the `/v1` URL namespace. Existing installed SDK packages without the
 header retain the server's Aster contract.
 
@@ -404,7 +403,7 @@ Signed Storage requests carry neither the API release nor API credentials.
 The configuration deliberately accepts only the exact release matching these
 TypeScript declarations. Use an Aster SDK package or raw versioned HTTP for
 Aster; passing an arbitrary release string with Birch response types would be
-unsafe. Package publication and API activation remain separate release steps.
+unsafe. See [the changelog](CHANGELOG.md) for the migration from SDK 0.8.
 
 
 ### Hosted integration environment

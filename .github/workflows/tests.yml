@@ -41,3 +41,39 @@ jobs:
           ROYALTYPORT_TEST_PROJECT_ID: ${{ vars.ROYALTYPORT_TEST_PROJECT_ID }}
           ROYALTYPORT_TEST_BASE_URL: ${{ vars.ROYALTYPORT_TEST_BASE_URL }}
           ROYALTYPORT_TEST_PROTECTION_BYPASS: ${{ secrets.ROYALTYPORT_TEST_PROTECTION_BYPASS }}
+
+  package-artifacts:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Pack and smoke-test the published files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts .package-smoke
+          npm pack --ignore-scripts --pack-destination release-artifacts
+          tar -xzf release-artifacts/royaltyport-sdk-*.tgz -C .package-smoke
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const sdk = await import('./.package-smoke/package/dist/index.js');
+          assert.equal(sdk.API_RELEASE, '2026-10-20.birch');
+          const client = new sdk.Royaltyport({ apiKey: 'packaging-smoke-no-network' });
+          assert.equal(typeof client.contracts.resolveStaging, 'function');
+          assert.equal(typeof client.statements.resolveStaging, 'function');
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-${{ github.sha }}
+          path: release-artifacts/*.tgz
+          if-no-files-found: error
+          retention-days: 14
