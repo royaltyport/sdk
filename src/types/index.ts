@@ -14,7 +14,6 @@ export type {
 } from './projects.js';
 
 export type { ScoreBuckets, ScoreSummary, TriggeredScoreRule, ResourceScore } from './scores.js';
-export type { StagingAvailableAction, StagingActionResult, StagingActionState } from './staging.js';
 export type {
   UploadStatus,
   UploadPeriod,

@@ -11,7 +11,6 @@ import type {
   StatementDownloadResult,
   StatementProcesses,
 } from '../types/statements.js';
-import type { StagingActionResult } from '../types/staging.js';
 import { BaseResource } from './base.js';
 import { runUploadFlow } from './upload-flow.js';
 
@@ -67,7 +66,5 @@ export class Statements extends BaseResource {
     return this.http.post(`/statements/staging/${stagingId}/resolve`, input, { projectId }, { idempotencyKey: options.idempotencyKey });
   }
 
-  async retryStaging(projectId: string, stagingId: number): Promise<ApiResponse<StagingActionResult>> {
-    return this.http.post(`/statements/staging/${stagingId}/retry`, {}, { projectId }, { retry: false });
-  }
+
 }

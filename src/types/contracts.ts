@@ -1,7 +1,6 @@
 import type { DocumentProcessingState } from './resolutions.js';
 import type { PaginatedResult, PaginationOptions } from './common.js';
 import type { ResourceScore } from './scores.js';
-import type { StagingActionState } from './staging.js';
 import type { ContractUploadContext, UploadResult } from './uploads.js';
 
 export type ExtractionId =
@@ -434,21 +433,12 @@ export interface DownloadResult {
   expiresIn: number;
 }
 
-export interface ContractProcesses extends StagingActionState, DocumentProcessingState {
+export interface ContractProcesses extends DocumentProcessingState {
   staging_id: number;
-  contract_id: number | null;
-  staging_done: boolean;
-  extraction_done: boolean;
-  staging_processes: {
-    stage: string;
-    info: Record<string, unknown>;
-  };
-  extraction_processes: {
-    stage: string;
-    extractions: Array<{
-      name: string;
-      status: string;
-      completed_at: string | null;
-    }>;
-  } | null;
+  staging_processes: { stage: string };
+  document_processes: Array<{
+    id: number;
+    stage: string | null;
+    extractions: Array<{ name: string; status: string | null; completed_at: string | null }>;
+  }>;
 }

@@ -239,10 +239,5 @@ describe('Contracts', () => {
     expect(http.get).toHaveBeenCalledWith('/contracts/42/processes', { projectId: 'proj-1' });
   });
 
-  it('retries paused staging without automatic HTTP retries', async () => {
-    const http = createMockHttp();
-    const contracts = new Contracts(http);
-    await contracts.retryStaging('proj-1', 42);
-    expect(http.post).toHaveBeenCalledWith('/contracts/staging/42/retry', {}, { projectId: 'proj-1' }, { retry: false });
-  });
+
 });

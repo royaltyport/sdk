@@ -80,8 +80,8 @@ const royaltyport = new Royaltyport({
 | `royaltyport.compositions` | `list`, `get` | Compositions (with products) |
 | `royaltyport.entities` | `list`, `get` | Entities (with merge history) |
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
-| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `processes`, `retryStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
-| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `processes`, `retryStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
+| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `processes`, `resolveStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
+| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `processes`, `resolveStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
 | `royaltyport.tags` | `list`, `update` | Scoped contract and statement tags |
 | `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
 | `royaltyport.search()` | — | Cross-resource search |
@@ -138,20 +138,28 @@ not accepted. Tags are names, not IDs.
 Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `processes()` for staging progress instead:
 
 Supplying `folderName` or `context` seals the metadata immediately and skips the
-review step. Contextual results have `status: 'queued' | 'paused'`,
-`context_applied: true`, and include the immutable `snapshot_hash` plus queue
-counts. Context-free uploads retain `status: 'uploaded'`.
+review step. Successful uploads return `status: 'uploaded'`. `processing_status`
+reports admission as `queued`, `paused`, or null; poll the upload for current state.
+Contextual results include `context_applied: true`, the immutable `snapshot_hash` and queue counts.
 
 ```js
 const { data: status } = await royaltyport.statements.processes(projectId, data.staging_id);
 ```
 
-When `status.requires_action` is true, inspect `available_actions` and
-`pause_reason`, then retry a capacity pause:
+When `status.status === 'paused'`, inspect `pause.actions`. Resolve a supported
+capacity pause with its current UUID and a stable idempotency key:
 
 ```js
-await royaltyport.statements.retryStaging(projectId, stagingId);
+await royaltyport.statements.resolveStaging(projectId, stagingId, {
+  pause_id: status.pause.id,
+  action: 'retry',
+  input: {},
+}, { idempotencyKey: 'one-stable-key-for-this-decision' });
 ```
+
+Use source-wide `status` and `terminal` for lifecycle decisions. Results live in
+`resources[]`; each `document_processes[]` entry has its own extraction details.
+The old singleton fields and `/retry` operation are Aster-only and absent from this Birch SDK.
 
 Score data is opt-in on contract and statement list/detail calls:
 
