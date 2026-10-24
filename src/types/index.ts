@@ -76,7 +76,6 @@ export type {
 
 export type {
   ExtractionId,
-  IncludeField,
   ContractCitationStructure,
   ContractCitation,
   ContractExtractionIdentity,
@@ -111,7 +110,6 @@ export type {
   ContractExtractionMap,
   ContractExtractionKey,
   ContractExtractionPage,
-  ContractExtractions,
   Contract,
   ContractListOptions,
   ContractGetOptions,

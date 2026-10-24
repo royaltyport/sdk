@@ -180,31 +180,6 @@ console.log(data.items[0]?.custom_extractions);
 
 ## Contract Extractions
 
-### Embedded extractions
-
-Existing `includes` behavior is unchanged. Use `contracts.list()` or
-`contracts.get()` when you want contract data and convenient embedded
-extraction arrays:
-
-```ts
-const { data: contract } = await royaltyport.contracts.get(projectId, contractId, {
-  includes: ['compositions', 'recordings', 'commitments'],
-  citations: true,
-});
-
-console.log(contract.extractions?.compositions);
-console.log(contract.extractions?.recordings);
-
-for (const commitment of contract.extractions?.commitments ?? []) {
-  console.log(commitment.linked_deliverables);
-  console.log(commitment.linked_assets);
-  console.log(commitment.citations);
-}
-```
-
-Each requested key remains an array under `contract.extractions`, capped at 100
-items and without pagination metadata.
-
 ### Paginated extraction
 
 For a large or complete extraction collection, use `listExtraction()` from
@@ -231,18 +206,6 @@ top-level extraction collection is paginated; nested arrays remain attached to
 each item and are not independently capped or paginated.
 
 With `citations: true`, extraction items include supporting citations.
-
-Contract languages, balances, and targets use the same include flow:
-
-```ts
-const { data: contract } = await royaltyport.contracts.get(projectId, contractId, {
-  includes: ['languages', 'balances', 'targets'],
-});
-
-console.log(contract.extractions?.languages);
-console.log(contract.extractions?.balances);
-console.log(contract.extractions?.targets);
-```
 
 ## Updates and Tags
 

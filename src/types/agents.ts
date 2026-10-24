@@ -3,8 +3,8 @@ export type AgentRunStatus = 'queued' | 'running' | 'waiting' | 'completed' | 'c
 export type AgentStepStatus = 'pending' | AgentRunStatus | 'skipped' | 'not_run' | 'unknown';
 export type AgentResourceType = 'contract' | 'statement' | 'project';
 export type AgentProcessKey =
-  | 'contract-processing' | 'contract-duplicate-check' | 'contract-relationships'
-  | 'contract-repair-apply' | 'project-convergence' | 'copyright-evaluation'
+  | 'contract-processing' | 'contract-deduplication' | 'contract-relationships'
+  | 'contract-repair' | 'project-convergence' | 'copyright-evaluation'
   | 'statement-processing' | 'statement-file-consolidation' | 'statement-reconciliation'
   | 'statement-asset-group-projection' | 'statement-dataroom-sync' | 'statement-dataroom-transform'
   | 'statement-coverage-resolution' | 'contract-relationships-payment-chains'

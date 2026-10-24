@@ -1,5 +1,5 @@
 import { describe, expectTypeOf, it } from 'vitest';
-import type { ContractIngestion } from './contracts.js';
+import type { ContractIngestion, Contract, ContractListOptions, ContractGetOptions } from './contracts.js';
 import type { StatementIngestion } from './statements.js';
 
 describe('Birch process types', () => {
@@ -10,4 +10,11 @@ describe('Birch process types', () => {
     expectTypeOf<StatementIngestion['document_processes'][number]['step']>().toEqualTypeOf<number>();
     expectTypeOf<ContractIngestion['document_processes'][number]['extractions'][number]['name']>().toEqualTypeOf<string>();
   });
+});
+
+
+it('uses dedicated extraction collections in Birch contract types', () => {
+  expectTypeOf<Extract<keyof Contract, 'extractions'>>().toEqualTypeOf<never>();
+  expectTypeOf<Extract<keyof ContractListOptions, 'includes'>>().toEqualTypeOf<never>();
+  expectTypeOf<Extract<keyof ContractGetOptions, 'includes'>>().toEqualTypeOf<never>();
 });

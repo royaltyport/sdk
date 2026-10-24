@@ -1,6 +1,9 @@
 # Changelog
 
-## Next release
+## 2.0.0
+
+- Contract reads use dedicated paginated extraction collections.
+- Use `contract-deduplication` and `contract-repair` when filtering downstream runs.
 
 - Add `contracts.agents()`, `statements.agents()`, `agents.listRuns()` and `agents.getRun()` for downstream run status and reader readiness. Types use `agent_readiness` and `agent_runs`.
 - Add `expectedRevision` to contract extraction options. Conditional recordings/compositions reads retain `meta.revision`; stale revisions raise `409 readiness_changed`.

@@ -200,21 +200,8 @@ const { data: relation } = await royaltyport.relations.get('project_id', relatio
 const { data } = await royaltyport.contracts.list('project_id', {
   page: 1,
   perPage: 50,
-  includes: ['entities', 'royalties', 'splits'], // include extracted data
   extractorIds: [201, 202], // include selected custom extractor results
 });
-
-// Embedded extraction arrays remain available on list/get calls
-const { data: contract } = await royaltyport.contracts.get('project_id', contractId, {
-  includes: ['compositions', 'recordings', 'commitments'],
-  citations: true,
-});
-
-for (const commitment of contract.extractions?.commitments ?? []) {
-  console.log(commitment.linked_deliverables);
-  console.log(commitment.linked_assets); // joined automatically
-  console.log(commitment.citations);
-}
 
 // Page a large or complete extraction collection independently
 const { data: recordings } = await royaltyport.contracts.listExtraction(
@@ -231,28 +218,22 @@ const { data: download } = await royaltyport.contracts.download('project_id', co
 console.log(download.url); // signed download URL
 
 // Check processing status
-const { data: processes } = await royaltyport.contracts.processes('project_id', contractId);
-console.log(processes.staging_done, processes.extraction_done);
+const { data: processes } = await royaltyport.contracts.ingestion('project_id', contractId);
+console.log(processes.status, processes.terminal);
 ```
 
-**Available include fields:** `entities`, `artists`, `writers`, `royalties`, `splits`, `costs`, `compensations`, `dates`, `accounting-periods`, `types`, `languages`, `signatures`, `control-areas`, `creative-approvals`, `commitments`, `balances`, `recordings`, `compositions`, `relations`, `targets`.
+**Available extraction keys:** `entities`, `artists`, `writers`, `royalties`, `splits`, `costs`, `compensations`, `dates`, `accounting-periods`, `types`, `languages`, `signatures`, `control-areas`, `creative-approvals`, `commitments`, `balances`, `recordings`, `compositions`, `relations`, `targets`.
 
 Commitments expose extracted items as `linked_deliverables` and automatically
 joined recording/composition links as `linked_assets`. Set `citations: true` on
-contract list or get calls to return supporting `ContractCitation` objects.
+`listExtraction()` calls to return supporting `ContractCitation` objects.
 
-`includes` behavior is unchanged: every requested extraction remains an array
-under `contract.extractions`, capped at 100 items and without pagination
-metadata. For a large or complete collection, use `listExtraction()` from page
-1. It supports every contract extraction key, defaults to 100 items per page,
-accepts up to 250, and returns `items`, `total_count`, `page`, and `per_page`. Payment
-extractions use `compensations`. Only the top-level collection is paginated;
-nested arrays remain attached to each item and are not independently capped or
-paginated.
+Use `listExtraction()` from page 1 to read standard contract extraction collections.
+It returns `items`, `total_count`, `page`, and `per_page`, with page sizes up to 250.
 
 ### Contract Upload
 
-Uploads are PDF-only, max 50 MB. Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Context-free uploads return `status: 'uploaded'`; uploads with a folder or approved context return `queued` or `paused` plus immutable context and queue metadata. Poll `processes()` for staging/extraction progress.
+Uploads are PDF-only, max 50 MB. Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Successful confirmation returns `status: 'uploaded'`; `processing_status` reports admission separately. Poll `ingestion()` for staging/extraction progress.
 
 ```ts
 // Upload from file path
@@ -318,7 +299,7 @@ console.log(result.staging_id, result.status); // 123 'queued'
 const { data: download } = await royaltyport.statements.download('project_id', statementId);
 
 // Check processing status
-const { data: processes } = await royaltyport.statements.processes('project_id', statementId);
+const { data: processes } = await royaltyport.statements.ingestion('project_id', statementId);
 ```
 
 Upload periods are value-only and use forms such as `2026M1`–`2026M12`,
@@ -429,23 +410,6 @@ const { data: artist } = await royaltyport.artists.get(projectId, artistMatch.id
 });
 ```
 
-### Read embedded contract extractions
-
-```ts
-const { data: contract } = await royaltyport.contracts.get(projectId, contractId, {
-  includes: [
-    'entities', 'artists', 'writers',
-    'royalties', 'splits', 'costs', 'compensations',
-    'dates', 'accounting-periods', 'types', 'languages', 'signatures',
-    'control-areas', 'creative-approvals', 'commitments',
-    'balances', 'recordings', 'compositions', 'relations', 'targets',
-  ],
-});
-```
-
-Each requested array is capped at 100 items. Use the paginated pattern below
-when the complete collection is required.
-
 ### Paginate through all records
 
 ```ts
@@ -482,19 +446,23 @@ const { data: upload } = await royaltyport.contracts.upload(projectId, './contra
   extractions: ['extract-royalties', 'extract-splits', 'extract-dates'],
 });
 
-// Poll processing status
-let done = false;
-while (!done) {
-  const { data: status } = await royaltyport.contracts.processes(projectId, upload.staging_id);
-  done = status.staging_done && status.extraction_done;
-  if (!done) await new Promise((r) => setTimeout(r, 3000));
+// Poll the uploaded source; a pause needs an explicit supported resolution.
+while (true) {
+  const { data: status } = await royaltyport.contracts.ingestion(projectId, upload.staging_id);
+  if (status.terminal) break;
+  if (status.status === 'paused' || status.status === 'unknown') {
+    console.log(status.pause);
+    break;
+  }
+  await new Promise((resolve) => setTimeout(resolve, (status.poll_after_seconds ?? 3) * 1000));
 }
+
 ```
 
 ## Tips
 
 - **Always destructure `{ data }`** from responses — every method returns `ApiResponse<T>`.
-- **Use `includes`** for convenient embedded extraction arrays and `listExtraction()` from page 1 for large or complete collections.
+- **Use `listExtraction()`** from page 1 for standard extraction collections.
 - **Use `includeMerged`** on artists, writers, entities, and relations to get dedup history.
 - **Use `includeProducts`** on recordings and compositions to get associated products.
 - **Parallelize independent requests** with `Promise.all()` for faster data gathering.

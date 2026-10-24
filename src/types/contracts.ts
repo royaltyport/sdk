@@ -356,14 +356,8 @@ export interface ContractExtractionMap {
 
 export type ContractExtractionKey = keyof ContractExtractionMap;
 
-export type IncludeField = ContractExtractionKey;
-
 export type ContractExtractionPage<K extends ContractExtractionKey = ContractExtractionKey> =
   PaginatedResult<ContractExtractionMap[K]>;
-
-export type ContractExtractions = {
-  [K in ContractExtractionKey]?: ContractExtractionMap[K][];
-};
 
 export interface Contract {
   id: number;
@@ -373,7 +367,6 @@ export interface Contract {
   file_name: string;
   file_type: string;
   created_at: string;
-  extractions?: ContractExtractions;
   custom_extractions?: CustomExtraction[];
   score?: ResourceScore;
 }
@@ -385,14 +378,12 @@ export interface CustomExtraction extends ContractExtractionIdentity {
 }
 
 export interface ContractListOptions extends PaginationOptions {
-  includes?: IncludeField[];
   extractorIds?: number[];
   score?: boolean;
   citations?: boolean;
 }
 
 export interface ContractGetOptions {
-  includes?: IncludeField[];
   extractorIds?: number[];
   score?: boolean;
   citations?: boolean;

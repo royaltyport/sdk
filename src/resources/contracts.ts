@@ -29,7 +29,6 @@ export class Contracts extends BaseResource {
       projectId,
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
-      includes: options?.includes?.join(','),
       extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
       citations: options?.citations?.toString(),
@@ -39,7 +38,6 @@ export class Contracts extends BaseResource {
   async get(projectId: string, contractId: number | string, options?: ContractGetOptions): Promise<ApiResponse<Contract>> {
     return this.http.get(`/contracts/${contractId}`, {
       projectId,
-      includes: options?.includes?.join(','),
       extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
       citations: options?.citations?.toString(),
