@@ -6,10 +6,9 @@ export interface DocumentProcessingState {
   poll_after_seconds: number | null;
   upload_status: string | null;
   pause: { id?: string; type: 'document_limit' | 'split_required' | 'unknown'; code: string; message: string; details: Record<string, unknown>; actions: Array<{ type: 'retry' | 'approve_split'; method: 'POST'; href: string }> } | null;
-  resources: Array<{ type: 'contract' | 'statement'; id: number; href: string }>;
+  resources: Array<{ type: 'contract' | 'statement'; id: number; href: string; links: { agents: string } }>;
   error: { code: string; message: string } | null;
   links: { self: string; resolve?: string | null };
-  split_manifest?: { decision_id: string; expected_count: number; materialized_count: number; promoted_count: number } | null;
   document_processes: Array<{ id: number; stage: string | null }>;
 }
 

@@ -79,6 +79,7 @@ describe('Contracts', () => {
       page: '2',
       perPage: '250',
       citations: 'true',
+      expectedRevision: undefined,
     });
   });
 

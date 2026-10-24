@@ -11,6 +11,7 @@ import { Relations } from './resources/relations.js';
 import { Contracts } from './resources/contracts.js';
 import { Statements } from './resources/statements.js';
 import { Tags } from './resources/tags.js';
+import { Agents } from './resources/agents.js';
 import { Knowledge } from './resources/knowledge.js';
 
 const DEFAULT_BASE_URL = 'https://api.royaltyport.com';
@@ -29,6 +30,7 @@ export class Royaltyport {
   private _statements?: Statements;
   private _tags?: Tags;
   private _knowledge?: Knowledge;
+  private _agents?: Agents;
 
   constructor(config: RoyaltyportConfig) {
     this._http = new HttpClient({
@@ -81,6 +83,10 @@ export class Royaltyport {
 
   get knowledge(): Knowledge {
     return (this._knowledge ??= new Knowledge(this._http));
+  }
+
+  get agents(): Agents {
+    return (this._agents ??= new Agents(this._http));
   }
 
   async search(projectId: string, query: string): Promise<ApiResponse<SearchResult>> {

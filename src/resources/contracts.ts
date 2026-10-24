@@ -1,3 +1,4 @@
+import type { ResourceAgents } from '../types/agents.js';
 import type { ContractStagingResolution, ResolutionOptions } from '../types/resolutions.js';
 import type { ApiResponse, PaginatedResult } from '../types/common.js';
 import type {
@@ -18,6 +19,11 @@ import { BaseResource } from './base.js';
 import { runUploadFlow } from './upload-flow.js';
 
 export class Contracts extends BaseResource {
+  /** Inspect downstream processing using the canonical contract ID. */
+  async agents(projectId: string, id: number): Promise<ApiResponse<ResourceAgents>> {
+    return this.http.get(`/contracts/${id}/agents`, { projectId });
+  }
+
   async list(projectId: string, options?: ContractListOptions): Promise<ApiResponse<PaginatedResult<Contract>>> {
     return this.http.get('/contracts', {
       projectId,
@@ -51,6 +57,7 @@ export class Contracts extends BaseResource {
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
       citations: options?.citations?.toString(),
+      expectedRevision: options?.expectedRevision,
     });
   }
 

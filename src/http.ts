@@ -49,9 +49,9 @@ export class HttpClient {
     this.initialRetryDelay = options.retryDelay ?? API_RETRY_DELAY;
   }
 
-  async get<T>(path: string, query?: Record<string, string | undefined>): Promise<ApiResponse<T>> {
+  async get<T, Meta = Record<string, unknown>>(path: string, query?: Record<string, string | undefined>): Promise<ApiResponse<T, Meta>> {
     const url = this.buildUrl(path, query);
-    return this.requestWithRetry<T>(url, {
+    return this.requestWithRetry<T, Meta>(url, {
       method: 'GET',
       headers: this.buildHeaders(),
     });
@@ -205,7 +205,7 @@ export class HttpClient {
     }
   }
 
-  private async requestWithRetry<T>(url: string, init: RequestInit, retry = true): Promise<ApiResponse<T>> {
+  private async requestWithRetry<T, Meta = Record<string, unknown>>(url: string, init: RequestInit, retry = true): Promise<ApiResponse<T, Meta>> {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= API_MAX_RETRIES; attempt++) {
@@ -231,7 +231,15 @@ export class HttpClient {
         }
 
         const body = await this.parseBody(res);
-        return { apiVersion: this.apiVersion, data: body.data as T, rateLimit, ...(body.meta && typeof body.meta === 'object' ? { meta: body.meta as Record<string, unknown> } : {}) };
+        return {
+          apiVersion: this.apiVersion,
+          data: body.data as T,
+          rateLimit,
+          ...(body.links && typeof body.links === 'object'
+            ? { links: body.links as NonNullable<ApiResponse<T>['links']> } : {}),
+          ...(body.meta && typeof body.meta === 'object'
+            ? { meta: body.meta as Meta & { revision?: string } } : {}),
+        };
       } catch (err) {
         if (err instanceof RoyaltyportError) throw err;
 

@@ -168,3 +168,5 @@ export type {
 } from './knowledge.js';
 
 export type { DocumentProcessingState, ResolutionOptions, RetryStagingResolution, SplitAgreement, ApproveSplitResolution, ContractStagingResolution } from './resolutions.js';
+
+export type * from './agents.js';

@@ -4,7 +4,7 @@ import type { StatementIngestion } from './statements.js';
 
 describe('Birch process types', () => {
   it('requires the replacement contract and exposes no legacy singleton fields', () => {
-    expectTypeOf<Extract<keyof ContractIngestion, 'contract_id' | 'staging_done' | 'extraction_done' | 'extraction_processes'>>().toEqualTypeOf<never>();
+    expectTypeOf<Extract<keyof ContractIngestion, 'contract_id' | 'staging_done' | 'extraction_done' | 'extraction_processes' | 'split_manifest' | 'intermediate_processes'>>().toEqualTypeOf<never>();
     expectTypeOf<Extract<keyof StatementIngestion, 'statement_id' | 'staging_done' | 'extraction_done' | 'extraction_processes'>>().toEqualTypeOf<never>();
     expectTypeOf<ContractIngestion['terminal']>().toEqualTypeOf<boolean>();
     expectTypeOf<StatementIngestion['document_processes'][number]['step']>().toEqualTypeOf<number>();

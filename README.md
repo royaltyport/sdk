@@ -415,3 +415,56 @@ Staging project. Tests refuse missing configuration, Production targets and host
 loopback fallbacks. Protection credentials are sent only to the Staging API origin;
 Storage transfers receive no API credentials. Local integration tests require explicit
 loopback URL, project and key. No Production fixture is a default.
+
+
+## Check downstream processing and reader readiness
+
+Use `contracts.agents()` or `statements.agents()` after ingestion creates a resource. Pass the canonical resource ID from `resources[]`; keep the staging ID for `ingestion()`.
+
+Read the contract’s downstream state:
+
+```typescript
+const { data: agents } = await royaltyport.contracts.agents(projectId, contractId);
+const recordings = agents.agent_readiness.find(item => item.key === 'recordings');
+```
+
+`agent_runs` summarizes processing runs. `agent_readiness` identifies which outputs you can fetch. A completed run alone does not prove that a reader reflects current inputs. Statement readiness reports processing milestones; it does not promise Data Room serving.
+
+When recordings or compositions are ready, read each page with the same `revision`:
+
+```typescript
+if (recordings?.status === 'ready' && recordings.revision) {
+  const { data, meta } = await royaltyport.contracts.listExtraction(
+    projectId,
+    contractId,
+    'recordings',
+    { expectedRevision: recordings.revision, page: 1, perPage: 100 },
+  );
+  console.log(data.items, meta?.revision);
+}
+```
+
+If inputs or reader dependencies change, the API returns `409` with code `readiness_changed`. Fetch Agents again before restarting pagination. Inspect `quality.status` and `quality.issues` for metadata limitations even when the reader is ready. Follow `poll_after_seconds` when it contains a number.
+
+List runs with cursor pagination, then inspect a run’s steps:
+
+```typescript
+const runs = await royaltyport.agents.listRuns(projectId, {
+  resourceType: 'contract', resourceId: contractId, limit: 20,
+});
+if (runs.meta?.has_more && runs.meta.next_cursor) {
+  const next = await royaltyport.agents.listRuns(projectId, {
+    resourceType: 'contract', resourceId: contractId, limit: 20,
+    cursor: runs.meta.next_cursor,
+  });
+  console.log(next.data);
+}
+if (runs.data[0]) {
+  const { data: run } = await royaltyport.agents.getRun(projectId, runs.data[0].id);
+  console.log(run.steps);
+}
+```
+
+Keep the same project, filters and limit when reusing a cursor. Responses retain `meta` and `links.next`. These methods use the SDK’s Birch release pin.
+
+Contract ingestion returns `staging_split_processes` and `staging_split_manifest`. Replace the earlier Birch names `intermediate_processes` and `split_manifest`. Each resulting resource includes `links.agents`.

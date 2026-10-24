@@ -1,3 +1,4 @@
+import type { ResourceAgents } from '../types/agents.js';
 import type { RetryStagingResolution, ResolutionOptions } from '../types/resolutions.js';
 import type { ApiResponse, PaginatedResult } from '../types/common.js';
 import type {
@@ -15,6 +16,11 @@ import { BaseResource } from './base.js';
 import { runUploadFlow } from './upload-flow.js';
 
 export class Statements extends BaseResource {
+  /** Inspect downstream processing using the canonical statement ID. */
+  async agents(projectId: string, id: number): Promise<ApiResponse<ResourceAgents>> {
+    return this.http.get(`/statements/${id}/agents`, { projectId });
+  }
+
   async list(projectId: string, options?: StatementListOptions): Promise<ApiResponse<PaginatedResult<Statement>>> {
     return this.http.get('/statements', {
       projectId,

@@ -399,6 +399,8 @@ export interface ContractGetOptions {
 }
 
 export interface ContractExtractionListOptions {
+  /** Recordings/compositions readiness revision. A changed collection returns 409 readiness_changed. */
+  expectedRevision?: string;
   /** Page number (default: 1). */
   page?: number;
   /** Items per page (default: 100, max: 250). */
@@ -434,6 +436,8 @@ export interface DownloadResult {
 }
 
 export interface ContractIngestion extends DocumentProcessingState {
+  staging_split_manifest: { decision_id: string; expected_count: number; materialized_count: number; promoted_count: number } | null;
+  staging_split_processes: Array<{ stage: string | null }>;
   staging_id: number;
   staging_processes: { stage: string };
   document_processes: Array<{
