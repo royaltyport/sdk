@@ -433,7 +433,7 @@ export interface DownloadResult {
   expiresIn: number;
 }
 
-export interface ContractProcesses extends DocumentProcessingState {
+export interface ContractIngestion extends DocumentProcessingState {
   staging_id: number;
   staging_processes: { stage: string };
   document_processes: Array<{

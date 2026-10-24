@@ -230,13 +230,13 @@ describe('Contracts', () => {
     expect(http.get).toHaveBeenCalledWith('/contracts/42/download', { projectId: 'proj-1' });
   });
 
-  it('processes calls correct path', async () => {
+  it('ingestion calls correct path', async () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
 
-    await contracts.processes('proj-1', 42);
+    await contracts.ingestion('proj-1', 42);
 
-    expect(http.get).toHaveBeenCalledWith('/contracts/42/processes', { projectId: 'proj-1' });
+    expect(http.get).toHaveBeenCalledWith('/contracts/42/ingestion', { projectId: 'proj-1' });
   });
 
 

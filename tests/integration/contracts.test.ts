@@ -93,7 +93,7 @@ describe('Contracts (integration)', () => {
     it('gets contract processes', async () => {
       if (!uploadedStagingId) return;
 
-      const { data } = await client.contracts.processes(PROJECT_ID, uploadedStagingId);
+      const { data } = await client.contracts.ingestion(PROJECT_ID, uploadedStagingId);
 
       expect(data).toHaveProperty('staging_id');
       expect(data.staging_id).toBe(uploadedStagingId);

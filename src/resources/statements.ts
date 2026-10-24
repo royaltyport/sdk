@@ -9,7 +9,7 @@ import type {
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,
-  StatementProcesses,
+  StatementIngestion,
 } from '../types/statements.js';
 import { BaseResource } from './base.js';
 import { runUploadFlow } from './upload-flow.js';
@@ -54,12 +54,12 @@ export class Statements extends BaseResource {
     return this.http.get(`/statements/${statementId}/download`, { projectId });
   }
 
-  async processes(projectId: string, id: number): Promise<ApiResponse<StatementProcesses>> {
-    return this.http.get(`/statements/${id}/processes`, { projectId });
+  async ingestion(projectId: string, id: number): Promise<ApiResponse<StatementIngestion>> {
+    return this.http.get(`/statements/${id}/ingestion`, { projectId });
   }
 
   /** Resolve the currently observed pause. Reuse the same key and payload on retries. */
-  async resolveStaging(projectId: string, stagingId: number, input: RetryStagingResolution, options: ResolutionOptions): Promise<ApiResponse<StatementProcesses>> {
+  async resolveStaging(projectId: string, stagingId: number, input: RetryStagingResolution, options: ResolutionOptions): Promise<ApiResponse<StatementIngestion>> {
     if (!options || typeof options.idempotencyKey !== 'string' || !/^[\x21-\x7e]{1,200}$/.test(options.idempotencyKey)) {
       throw new Error('idempotencyKey must contain 1–200 printable non-whitespace ASCII characters');
     }

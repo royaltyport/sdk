@@ -80,8 +80,8 @@ const royaltyport = new Royaltyport({
 | `royaltyport.compositions` | `list`, `get` | Compositions (with products) |
 | `royaltyport.entities` | `list`, `get` | Entities (with merge history) |
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
-| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `processes`, `resolveStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
-| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `processes`, `resolveStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
+| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `ingestion`, `resolveStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
+| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `ingestion`, `resolveStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
 | `royaltyport.tags` | `list`, `update` | Scoped contract and statement tags |
 | `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
 | `royaltyport.search()` | — | Cross-resource search |
@@ -135,7 +135,7 @@ Period objects are value-only. Use `2026M1`–`2026M12`, `2026Q1`–`2026Q4`,
 `2026H1`/`2026H2`, or `2026Y`; period labels and start/end date overrides are
 not accepted. Tags are names, not IDs.
 
-Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `processes()` for staging progress instead:
+Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `ingestion()` for staging progress instead:
 
 Supplying `folderName` or `context` seals the metadata immediately and skips the
 review step. Successful uploads return `status: 'uploaded'`. `processing_status`
@@ -143,7 +143,7 @@ reports admission as `queued`, `paused`, or null; poll the upload for current st
 Contextual results include `context_applied: true`, the immutable `snapshot_hash` and queue counts.
 
 ```js
-const { data: status } = await royaltyport.statements.processes(projectId, data.staging_id);
+const { data: status } = await royaltyport.statements.ingestion(projectId, data.staging_id);
 ```
 
 When `status.status === 'paused'`, inspect `pause.actions`. Resolve a supported
@@ -337,7 +337,7 @@ Read processing status first and submit its current `pause.id` (or `pause_id`).
 Use one stable idempotency key per decision. If a request times out, retry the
 same key and payload; a different payload under that key returns HTTP 409.
 HTTP 202 means accepted for background dispatch; HTTP 200 can mean capacity
-is still full. Continue reading the stable `/processes` URL and use the
+is still full. Continue reading the stable `/ingestion` URL and use the
 source-wide `status`, `terminal`, and `poll_after_seconds` fields. A paused or
 unknown source is not a signal to poll forever. Existing retry methods remain
 available for older integrations.

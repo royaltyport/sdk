@@ -1,5 +1,10 @@
 # Changelog
 
+## Next release
+
+- Rename contract/statement polling methods to `ingestion()` and types to `ContractIngestion` / `StatementIngestion`. Both call the Birch `/ingestion` endpoint. Replace calls to `processes()` when upgrading.
+
+
 ## 1.0.0
 
 SDK 1.0 selects API release `2026-10-20.birch`. The API date and SDK package

@@ -121,7 +121,7 @@ export type {
   ContractUploadOptions,
   ContractUploadResult,
   DownloadResult,
-  ContractProcesses,
+  ContractIngestion,
 } from './contracts.js';
 
 export type {
@@ -137,7 +137,7 @@ export type {
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,
-  StatementProcesses,
+  StatementIngestion,
 } from './statements.js';
 
 export type {
