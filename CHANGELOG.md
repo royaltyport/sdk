@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.0
+
+- Contract reads use dedicated paginated extraction collections.
+- Use `contract-deduplication` and `contract-repair` when filtering downstream runs.
+
+- Add `contracts.agents()`, `statements.agents()`, `agents.listRuns()` and `agents.getRun()` for downstream run status and reader readiness. Types use `agent_readiness` and `agent_runs`.
+- Add `expectedRevision` to contract extraction options. Conditional recordings/compositions reads retain `meta.revision`; stale revisions raise `409 readiness_changed`.
+- Preserve cursor pagination metadata and top-level response links.
+- Rename contract ingestion split fields to `staging_split_processes` and `staging_split_manifest`, and add `resources[].links.agents`. Remove the earlier Birch field names without aliases.
+
+- Rename contract/statement polling methods to `ingestion()` and types to `ContractIngestion` / `StatementIngestion`. Both call the Birch `/ingestion` endpoint. Replace calls to `processes()` when upgrading.
+
+
 ## 1.0.0
 
 SDK 1.0 selects API release `2026-10-20.birch`. The API date and SDK package

@@ -117,7 +117,7 @@ export interface StatementDownloadResult {
   expiresIn: number;
 }
 
-export interface StatementProcesses extends DocumentProcessingState {
+export interface StatementIngestion extends DocumentProcessingState {
   staging_id: number;
   staging_processes: { stage: string };
   document_processes: Array<{

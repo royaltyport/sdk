@@ -356,14 +356,8 @@ export interface ContractExtractionMap {
 
 export type ContractExtractionKey = keyof ContractExtractionMap;
 
-export type IncludeField = ContractExtractionKey;
-
 export type ContractExtractionPage<K extends ContractExtractionKey = ContractExtractionKey> =
   PaginatedResult<ContractExtractionMap[K]>;
-
-export type ContractExtractions = {
-  [K in ContractExtractionKey]?: ContractExtractionMap[K][];
-};
 
 export interface Contract {
   id: number;
@@ -373,7 +367,6 @@ export interface Contract {
   file_name: string;
   file_type: string;
   created_at: string;
-  extractions?: ContractExtractions;
   custom_extractions?: CustomExtraction[];
   score?: ResourceScore;
 }
@@ -385,20 +378,20 @@ export interface CustomExtraction extends ContractExtractionIdentity {
 }
 
 export interface ContractListOptions extends PaginationOptions {
-  includes?: IncludeField[];
   extractorIds?: number[];
   score?: boolean;
   citations?: boolean;
 }
 
 export interface ContractGetOptions {
-  includes?: IncludeField[];
   extractorIds?: number[];
   score?: boolean;
   citations?: boolean;
 }
 
 export interface ContractExtractionListOptions {
+  /** Recordings/compositions readiness revision. A changed collection returns 409 readiness_changed. */
+  expectedRevision?: string;
   /** Page number (default: 1). */
   page?: number;
   /** Items per page (default: 100, max: 250). */
@@ -433,7 +426,9 @@ export interface DownloadResult {
   expiresIn: number;
 }
 
-export interface ContractProcesses extends DocumentProcessingState {
+export interface ContractIngestion extends DocumentProcessingState {
+  staging_split_manifest: { decision_id: string; expected_count: number; materialized_count: number; promoted_count: number } | null;
+  staging_split_processes: Array<{ stage: string | null }>;
   staging_id: number;
   staging_processes: { stage: string };
   document_processes: Array<{

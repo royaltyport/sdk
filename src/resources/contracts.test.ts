@@ -1,5 +1,5 @@
 import type { HttpClient } from '../http.js';
-import type { Contract } from '../types/contracts.js';
+import type { ContractCommitment } from '../types/contracts.js';
 import { describe, it, expect, vi } from 'vitest';
 import { Contracts } from './contracts.js';
 import { createMockHttp } from './test-helpers.js';
@@ -15,24 +15,23 @@ function mockUploadFlow(http: HttpClient) {
 }
 
 describe('Contracts', () => {
-  it('list passes projectId, pagination, and includes', async () => {
+  it('list passes projectId and pagination', async () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
 
-    await contracts.list('proj-1', { page: 1, perPage: 10, includes: ['entities', 'royalties', 'languages'] });
+    await contracts.list('proj-1', { page: 1, perPage: 10 });
 
     expect(http.get).toHaveBeenCalledWith('/contracts', {
       projectId: 'proj-1',
       page: '1',
       perPage: '10',
-      includes: 'entities,royalties,languages',
       extractorIds: undefined,
       score: undefined,
       citations: undefined,
     });
   });
 
-  it('list passes undefined includes when not set', async () => {
+  it('list omits extraction selections', async () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
 
@@ -42,22 +41,20 @@ describe('Contracts', () => {
       projectId: 'proj-1',
       page: undefined,
       perPage: undefined,
-      includes: undefined,
       extractorIds: undefined,
       score: undefined,
       citations: undefined,
     });
   });
 
-  it('get passes contractId and includes', async () => {
+  it('get passes contractId', async () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
 
-    await contracts.get('proj-1', 99, { includes: ['dates', 'signatures'] });
+    await contracts.get('proj-1', 99);
 
     expect(http.get).toHaveBeenCalledWith('/contracts/99', {
       projectId: 'proj-1',
-      includes: 'dates,signatures',
       extractorIds: undefined,
       score: undefined,
       citations: undefined,
@@ -79,6 +76,7 @@ describe('Contracts', () => {
       page: '2',
       perPage: '250',
       citations: 'true',
+      expectedRevision: undefined,
     });
   });
 
@@ -106,32 +104,23 @@ describe('Contracts', () => {
     expect(http.get).toHaveBeenNthCalledWith(2, '/contracts/99', expect.objectContaining({ extractorIds: '201' }));
   });
 
-  it('serializes commitments on list and get', async () => {
+  it('forwards citations for custom extractor results on list and get', async () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
 
-    await contracts.list('proj-1', { includes: ['commitments'], citations: true });
-    await contracts.get('proj-1', 99, { includes: ['commitments'], citations: true });
+    await contracts.list('proj-1', { extractorIds: [201], citations: true });
+    await contracts.get('proj-1', 99, { extractorIds: [201], citations: true });
 
     expect(http.get).toHaveBeenNthCalledWith(1, '/contracts', expect.objectContaining({
-      includes: 'commitments',
       citations: 'true',
     }));
     expect(http.get).toHaveBeenNthCalledWith(2, '/contracts/99', expect.objectContaining({
-      includes: 'commitments',
       citations: 'true',
     }));
   });
 
   it('types commitments with linked deliverables and automatically joined assets', () => {
-    const contract: Contract = {
-      id: 99,
-      internal_uuid: '11111111-1111-4111-8111-111111111111',
-      file_name: 'agreement.pdf',
-      file_type: 'application/pdf',
-      created_at: '2026-08-21T10:00:00Z',
-      extractions: {
-        commitments: [{
+    const commitments: ContractCommitment[] = [{
           id: 12,
           internal_uuid: '22222222-2222-4222-8222-222222222222',
           created_at: '2026-08-21T10:00:00Z',
@@ -151,12 +140,10 @@ describe('Contracts', () => {
             created_at: '2026-08-21T10:05:00Z',
             updated_at: '2026-08-21T10:05:00Z',
           }],
-        }],
-      },
-    };
+        }];
 
-    expect(contract.extractions?.commitments?.[0]?.linked_deliverables[0]?.type).toBe('album');
-    expect(contract.extractions?.commitments?.[0]?.linked_assets[0]?.type).toBe('recording');
+    expect(commitments[0]?.linked_deliverables[0]?.type).toBe('album');
+    expect(commitments[0]?.linked_assets[0]?.type).toBe('recording');
   });
 
   it('forwards score on list and get', async () => {
@@ -230,13 +217,13 @@ describe('Contracts', () => {
     expect(http.get).toHaveBeenCalledWith('/contracts/42/download', { projectId: 'proj-1' });
   });
 
-  it('processes calls correct path', async () => {
+  it('ingestion calls correct path', async () => {
     const http = createMockHttp();
     const contracts = new Contracts(http);
 
-    await contracts.processes('proj-1', 42);
+    await contracts.ingestion('proj-1', 42);
 
-    expect(http.get).toHaveBeenCalledWith('/contracts/42/processes', { projectId: 'proj-1' });
+    expect(http.get).toHaveBeenCalledWith('/contracts/42/ingestion', { projectId: 'proj-1' });
   });
 
 

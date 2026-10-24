@@ -32,7 +32,7 @@ describe('Statements (integration)', () => {
     it('gets statement processes', async () => {
       if (!uploadedStagingId) return;
 
-      const { data } = await client.statements.processes(PROJECT_ID, uploadedStagingId);
+      const { data } = await client.statements.ingestion(PROJECT_ID, uploadedStagingId);
 
       expect(data).toHaveProperty('staging_id');
       expect(data.staging_id).toBe(uploadedStagingId);

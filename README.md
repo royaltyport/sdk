@@ -80,8 +80,8 @@ const royaltyport = new Royaltyport({
 | `royaltyport.compositions` | `list`, `get` | Compositions (with products) |
 | `royaltyport.entities` | `list`, `get` | Entities (with merge history) |
 | `royaltyport.relations` | `list`, `get` | Relations (with merge history) |
-| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `processes`, `resolveStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
-| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `processes`, `resolveStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
+| `royaltyport.contracts` | `list`, `get`, `listExtraction`, `update`, `upload`, `download`, `ingestion`, `resolveStaging` | Contracts with paginated extractions, tag updates, upload, download, scoring, and staging recovery |
+| `royaltyport.statements` | `list`, `get`, `update`, `upload`, `download`, `ingestion`, `resolveStaging` | Statements with metadata updates, upload, download, scoring, and staging recovery |
 | `royaltyport.tags` | `list`, `update` | Scoped contract and statement tags |
 | `royaltyport.knowledge` | `search` | Governed organization knowledge applicable to a project |
 | `royaltyport.search()` | — | Cross-resource search |
@@ -135,7 +135,7 @@ Period objects are value-only. Use `2026M1`–`2026M12`, `2026Q1`–`2026Q4`,
 `2026H1`/`2026H2`, or `2026Y`; period labels and start/end date overrides are
 not accepted. Tags are names, not IDs.
 
-Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `processes()` for staging progress instead:
+Behind a single `upload()` call the SDK mints a signed storage URL, PUTs the file bytes directly to storage, and completes the upload. Upload progress events are no longer emitted — poll `ingestion()` for staging progress instead:
 
 Supplying `folderName` or `context` seals the metadata immediately and skips the
 review step. Successful uploads return `status: 'uploaded'`. `processing_status`
@@ -143,7 +143,7 @@ reports admission as `queued`, `paused`, or null; poll the upload for current st
 Contextual results include `context_applied: true`, the immutable `snapshot_hash` and queue counts.
 
 ```js
-const { data: status } = await royaltyport.statements.processes(projectId, data.staging_id);
+const { data: status } = await royaltyport.statements.ingestion(projectId, data.staging_id);
 ```
 
 When `status.status === 'paused'`, inspect `pause.actions`. Resolve a supported
@@ -180,31 +180,6 @@ console.log(data.items[0]?.custom_extractions);
 
 ## Contract Extractions
 
-### Embedded extractions
-
-Existing `includes` behavior is unchanged. Use `contracts.list()` or
-`contracts.get()` when you want contract data and convenient embedded
-extraction arrays:
-
-```ts
-const { data: contract } = await royaltyport.contracts.get(projectId, contractId, {
-  includes: ['compositions', 'recordings', 'commitments'],
-  citations: true,
-});
-
-console.log(contract.extractions?.compositions);
-console.log(contract.extractions?.recordings);
-
-for (const commitment of contract.extractions?.commitments ?? []) {
-  console.log(commitment.linked_deliverables);
-  console.log(commitment.linked_assets);
-  console.log(commitment.citations);
-}
-```
-
-Each requested key remains an array under `contract.extractions`, capped at 100
-items and without pagination metadata.
-
 ### Paginated extraction
 
 For a large or complete extraction collection, use `listExtraction()` from
@@ -231,18 +206,6 @@ top-level extraction collection is paginated; nested arrays remain attached to
 each item and are not independently capped or paginated.
 
 With `citations: true`, extraction items include supporting citations.
-
-Contract languages, balances, and targets use the same include flow:
-
-```ts
-const { data: contract } = await royaltyport.contracts.get(projectId, contractId, {
-  includes: ['languages', 'balances', 'targets'],
-});
-
-console.log(contract.extractions?.languages);
-console.log(contract.extractions?.balances);
-console.log(contract.extractions?.targets);
-```
 
 ## Updates and Tags
 
@@ -337,7 +300,7 @@ Read processing status first and submit its current `pause.id` (or `pause_id`).
 Use one stable idempotency key per decision. If a request times out, retry the
 same key and payload; a different payload under that key returns HTTP 409.
 HTTP 202 means accepted for background dispatch; HTTP 200 can mean capacity
-is still full. Continue reading the stable `/processes` URL and use the
+is still full. Continue reading the stable `/ingestion` URL and use the
 source-wide `status`, `terminal`, and `poll_after_seconds` fields. A paused or
 unknown source is not a signal to poll forever. Existing retry methods remain
 available for older integrations.
@@ -415,3 +378,56 @@ Staging project. Tests refuse missing configuration, Production targets and host
 loopback fallbacks. Protection credentials are sent only to the Staging API origin;
 Storage transfers receive no API credentials. Local integration tests require explicit
 loopback URL, project and key. No Production fixture is a default.
+
+
+## Check downstream processing and reader readiness
+
+Use `contracts.agents()` or `statements.agents()` after ingestion creates a resource. Pass the canonical resource ID from `resources[]`; keep the staging ID for `ingestion()`.
+
+Read the contract’s downstream state:
+
+```typescript
+const { data: agents } = await royaltyport.contracts.agents(projectId, contractId);
+const recordings = agents.agent_readiness.find(item => item.key === 'recordings');
+```
+
+`agent_runs` summarizes processing runs. `agent_readiness` identifies which outputs you can fetch. A completed run alone does not prove that a reader reflects current inputs. Statement readiness reports processing milestones; it does not promise Data Room serving.
+
+When recordings or compositions are ready, read each page with the same `revision`:
+
+```typescript
+if (recordings?.status === 'ready' && recordings.revision) {
+  const { data, meta } = await royaltyport.contracts.listExtraction(
+    projectId,
+    contractId,
+    'recordings',
+    { expectedRevision: recordings.revision, page: 1, perPage: 100 },
+  );
+  console.log(data.items, meta?.revision);
+}
+```
+
+If inputs or reader dependencies change, the API returns `409` with code `readiness_changed`. Fetch Agents again before restarting pagination. Inspect `quality.status` and `quality.issues` for metadata limitations even when the reader is ready. Follow `poll_after_seconds` when it contains a number.
+
+List runs with cursor pagination, then inspect a run’s steps:
+
+```typescript
+const runs = await royaltyport.agents.listRuns(projectId, {
+  resourceType: 'contract', resourceId: contractId, limit: 20,
+});
+if (runs.meta?.has_more && runs.meta.next_cursor) {
+  const next = await royaltyport.agents.listRuns(projectId, {
+    resourceType: 'contract', resourceId: contractId, limit: 20,
+    cursor: runs.meta.next_cursor,
+  });
+  console.log(next.data);
+}
+if (runs.data[0]) {
+  const { data: run } = await royaltyport.agents.getRun(projectId, runs.data[0].id);
+  console.log(run.steps);
+}
+```
+
+Keep the same project, filters and limit when reusing a cursor. Responses retain `meta` and `links.next`. These methods use the SDK’s Birch release pin.
+
+Contract ingestion returns `staging_split_processes` and `staging_split_manifest`. Replace the earlier Birch names `intermediate_processes` and `split_manifest`. Each resulting resource includes `links.agents`.

@@ -1,3 +1,4 @@
+import type { ResourceAgents } from '../types/agents.js';
 import type { ContractStagingResolution, ResolutionOptions } from '../types/resolutions.js';
 import type { ApiResponse, PaginatedResult } from '../types/common.js';
 import type {
@@ -12,18 +13,22 @@ import type {
   ContractUploadOptions,
   ContractUploadResult,
   DownloadResult,
-  ContractProcesses,
+  ContractIngestion,
 } from '../types/contracts.js';
 import { BaseResource } from './base.js';
 import { runUploadFlow } from './upload-flow.js';
 
 export class Contracts extends BaseResource {
+  /** Inspect downstream processing using the canonical contract ID. */
+  async agents(projectId: string, id: number): Promise<ApiResponse<ResourceAgents>> {
+    return this.http.get(`/contracts/${id}/agents`, { projectId });
+  }
+
   async list(projectId: string, options?: ContractListOptions): Promise<ApiResponse<PaginatedResult<Contract>>> {
     return this.http.get('/contracts', {
       projectId,
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
-      includes: options?.includes?.join(','),
       extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
       citations: options?.citations?.toString(),
@@ -33,7 +38,6 @@ export class Contracts extends BaseResource {
   async get(projectId: string, contractId: number | string, options?: ContractGetOptions): Promise<ApiResponse<Contract>> {
     return this.http.get(`/contracts/${contractId}`, {
       projectId,
-      includes: options?.includes?.join(','),
       extractorIds: options?.extractorIds?.join(','),
       score: options?.score?.toString(),
       citations: options?.citations?.toString(),
@@ -51,6 +55,7 @@ export class Contracts extends BaseResource {
       page: options?.page?.toString(),
       perPage: options?.perPage?.toString(),
       citations: options?.citations?.toString(),
+      expectedRevision: options?.expectedRevision,
     });
   }
 
@@ -74,12 +79,12 @@ export class Contracts extends BaseResource {
     return this.http.get(`/contracts/${contractId}/download`, { projectId });
   }
 
-  async processes(projectId: string, id: number): Promise<ApiResponse<ContractProcesses>> {
-    return this.http.get(`/contracts/${id}/processes`, { projectId });
+  async ingestion(projectId: string, id: number): Promise<ApiResponse<ContractIngestion>> {
+    return this.http.get(`/contracts/${id}/ingestion`, { projectId });
   }
 
   /** Resolve the currently observed pause. Reuse the same key and payload on retries. */
-  async resolveStaging(projectId: string, stagingId: number, input: ContractStagingResolution, options: ResolutionOptions): Promise<ApiResponse<ContractProcesses>> {
+  async resolveStaging(projectId: string, stagingId: number, input: ContractStagingResolution, options: ResolutionOptions): Promise<ApiResponse<ContractIngestion>> {
     if (!options || typeof options.idempotencyKey !== 'string' || !/^[\x21-\x7e]{1,200}$/.test(options.idempotencyKey)) {
       throw new Error('idempotencyKey must contain 1–200 printable non-whitespace ASCII characters');
     }

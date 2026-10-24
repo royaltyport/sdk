@@ -31,10 +31,11 @@ export interface RateLimit {
   reset: number;
 }
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T, Meta = Record<string, unknown>> {
   /** Resolved API contract, checked against this client’s pin. */
   apiVersion: ApiVersion;
-  meta?: Record<string, unknown>;
+  meta?: Meta & { revision?: string };
+  links?: { next?: string | null; [key: string]: string | null | undefined };
   data: T;
   rateLimit: RateLimit;
 }

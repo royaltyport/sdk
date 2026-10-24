@@ -76,7 +76,6 @@ export type {
 
 export type {
   ExtractionId,
-  IncludeField,
   ContractCitationStructure,
   ContractCitation,
   ContractExtractionIdentity,
@@ -111,7 +110,6 @@ export type {
   ContractExtractionMap,
   ContractExtractionKey,
   ContractExtractionPage,
-  ContractExtractions,
   Contract,
   ContractListOptions,
   ContractGetOptions,
@@ -121,7 +119,7 @@ export type {
   ContractUploadOptions,
   ContractUploadResult,
   DownloadResult,
-  ContractProcesses,
+  ContractIngestion,
 } from './contracts.js';
 
 export type {
@@ -137,7 +135,7 @@ export type {
   StatementUploadOptions,
   StatementUploadResult,
   StatementDownloadResult,
-  StatementProcesses,
+  StatementIngestion,
 } from './statements.js';
 
 export type {
@@ -168,3 +166,5 @@ export type {
 } from './knowledge.js';
 
 export type { DocumentProcessingState, ResolutionOptions, RetryStagingResolution, SplitAgreement, ApproveSplitResolution, ContractStagingResolution } from './resolutions.js';
+
+export type * from './agents.js';

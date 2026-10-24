@@ -10,44 +10,21 @@ describe('Contracts (integration)', () => {
     expect(Array.isArray(data.items)).toBe(true);
   });
 
-  it('lists contracts with includes', async () => {
-    const { data } = await client.contracts.list(PROJECT_ID, {
-      includes: ['entities', 'royalties', 'languages', 'balances'],
-    });
-
-    expect(data).toHaveProperty('items');
-    for (const contract of data.items) {
-      expect(Array.isArray(contract.extractions?.languages)).toBe(true);
-      expect(Array.isArray(contract.extractions?.balances)).toBe(true);
-      for (const language of contract.extractions?.languages ?? []) {
-        expect(typeof language.id).toBe('number');
-        expect(language).not.toHaveProperty('internal_id');
-        expect(typeof language.internal_uuid).toBe('string');
-        expect(typeof language.created_at).toBe('string');
-        expect(typeof language.updated_at).toBe('string');
-      }
-    }
+  it('returns contract metadata without embedded extraction collections', async () => {
+    const { data } = await client.contracts.list(PROJECT_ID);
+    for (const contract of data.items) expect(contract).not.toHaveProperty('extractions');
   });
 
-  it('lists and gets typed commitments with automatic asset links', async () => {
-    const { data: listed } = await client.contracts.list(PROJECT_ID, {
-      perPage: 1,
-      includes: ['commitments'],
-      citations: true,
-    });
-
-    expect(Array.isArray(listed.items)).toBe(true);
-    for (const listedContract of listed.items) {
-      expect(Array.isArray(listedContract.extractions?.commitments)).toBe(true);
-    }
+  it('pages typed commitments with automatic asset links', async (context) => {
+    const { data: listed } = await client.contracts.list(PROJECT_ID, { perPage: 1 });
     const contractId = listed.items[0]?.id;
-    if (!contractId) return;
-
-    const { data: contract } = await client.contracts.get(PROJECT_ID, contractId, {
-      includes: ['commitments'],
-      citations: true,
-    });
-    for (const commitment of contract.extractions?.commitments ?? []) {
+    if (!contractId) {
+      context.skip(); // This owned Staging project may contain uploads without promoted contracts.
+      return;
+    }
+    const { data } = await client.contracts.listExtraction(PROJECT_ID, contractId, 'commitments', { citations: true });
+    expect(Array.isArray(data.items)).toBe(true);
+    for (const commitment of data.items) {
       expect(commitment).not.toHaveProperty('internal_id');
       expect(typeof commitment.internal_uuid).toBe('string');
       expect(typeof commitment.created_at).toBe('string');
@@ -93,7 +70,7 @@ describe('Contracts (integration)', () => {
     it('gets contract processes', async () => {
       if (!uploadedStagingId) return;
 
-      const { data } = await client.contracts.processes(PROJECT_ID, uploadedStagingId);
+      const { data } = await client.contracts.ingestion(PROJECT_ID, uploadedStagingId);
 
       expect(data).toHaveProperty('staging_id');
       expect(data.staging_id).toBe(uploadedStagingId);
