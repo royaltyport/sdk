@@ -1,5 +1,5 @@
 import { API_RELEASE, API_VERSION_HEADER, type ApiVersion } from './versioning.js';
-import type { ApiResponse, RateLimit } from './types/common.js';
+import type { ApiResponse, ApiErrorDetails, RateLimit } from './types/common.js';
 import {
   RoyaltyportError,
   RoyaltyportAuthenticationError,
@@ -42,7 +42,7 @@ export class HttpClient {
     if (options.apiVersion !== undefined && options.apiVersion !== API_RELEASE) {
       throw new RoyaltyportError(`This SDK supports only ${API_RELEASE}. Use the SDK release for the requested API family.`, 0, undefined, 'unsupported_api_version');
     }
-    this.apiVersion = options.apiVersion ?? API_RELEASE;
+    this.apiVersion = API_RELEASE;
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
     this.token = options.token;
     this._fetch = options.fetch;
@@ -54,6 +54,17 @@ export class HttpClient {
     return this.requestWithRetry<T, Meta>(url, {
       method: 'GET',
       headers: this.buildHeaders(),
+    });
+  }
+
+  async follow<T>(href: string): Promise<ApiResponse<T>> {
+    const url = new URL(href, this.baseUrl);
+    if (url.origin !== new URL(this.baseUrl).origin || !url.pathname.startsWith('/v1/')
+      || url.username || url.password || url.hash) {
+      throw new RoyaltyportValidationError('Navigation links must target this client\'s API origin under /v1/.');
+    }
+    return this.requestWithRetry<T>(url.toString(), {
+      method: 'GET', headers: this.buildHeaders(), redirect: 'error',
     });
   }
 
@@ -192,16 +203,18 @@ export class HttpClient {
       `Request failed with status ${status}`;
 
     const code = typeof error === 'object' && typeof error?.code === 'string' ? error.code : undefined;
+    const details = typeof error === 'object' && error !== null && !Array.isArray(error)
+      ? error as ApiErrorDetails : undefined;
 
     switch (status) {
       case 400:
-        throw new RoyaltyportValidationError(message, rateLimit, fields, code);
+        throw new RoyaltyportValidationError(message, rateLimit, fields, code, details);
       case 401:
-        throw new RoyaltyportAuthenticationError(message, rateLimit, code);
+        throw new RoyaltyportAuthenticationError(message, rateLimit, code, details);
       case 429:
-        throw new RoyaltyportRateLimitError(message, rateLimit, code);
+        throw new RoyaltyportRateLimitError(message, rateLimit, code, details);
       default:
-        throw new RoyaltyportError(message, status, rateLimit, code);
+        throw new RoyaltyportError(message, status, rateLimit, code, details);
     }
   }
 

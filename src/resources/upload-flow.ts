@@ -160,13 +160,12 @@ export async function runUploadFlow({
     const rateLimit = err instanceof RoyaltyportError ? err.rateLimit : undefined;
     throw new RoyaltyportUploadError(
       `Upload completion failed (file bytes are in storage): ${err instanceof Error ? err.message : String(err)}`,
-      { step: 'complete', status, stagingId: staging_id, ...(rateLimit && { rateLimit }), cause: err },
+      { step: 'complete', status, stagingId: staging_id, ...(rateLimit && { rateLimit }), ...(err instanceof RoyaltyportError && { ...(err.code !== undefined && { code: err.code }), ...(err.details !== undefined && { details: err.details }) }), cause: err },
     );
   }
 
   return {
+    ...done,
     data: { ...done.data, staging_id, file_path },
-    rateLimit: done.rateLimit,
-    apiVersion: done.apiVersion,
   };
 }

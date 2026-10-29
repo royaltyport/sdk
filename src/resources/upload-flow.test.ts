@@ -444,3 +444,18 @@ describe('error mapping per step', () => {
     expect(fetchFn).toHaveBeenCalledTimes(4);
   });
 });
+
+it.each(['contracts', 'statements'] as const)('preserves %s confirmation polling links, null admission and envelope metadata', async kind => {
+  const self = `/v1/${kind}/123/ingestion?projectId=proj-1`;
+  const fetch = vi.fn().mockResolvedValueOnce(mintResponse())
+    .mockResolvedValueOnce(new Response(''))
+    .mockResolvedValueOnce(jsonResponse({ data: { staging_id: 123, status: 'uploaded', context_applied: true,
+      processing_status: null, usage_meter: 0, usage_limit: null, links: { self } },
+      meta: { decision_id: 'decision-1' }, links: { self } }));
+  const resource = kind === 'contracts' ? createContracts(fetch) : createStatements(fetch);
+  const result = await resource.upload('proj-1', pdfBytes, { fileName: 'file.pdf' });
+  expect(result.data).toMatchObject({ status: 'uploaded', processing_status: null, usage_meter: 0,
+    usage_limit: null, links: { self }, file_path: FILE_PATH });
+  expect(result.meta).toEqual({ decision_id: 'decision-1' });
+  expect(result.links).toEqual({ self });
+});

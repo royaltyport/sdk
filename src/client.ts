@@ -34,7 +34,7 @@ export class Royaltyport {
 
   constructor(config: RoyaltyportConfig) {
     this._http = new HttpClient({
-      ...(config.apiVersion && { apiVersion: config.apiVersion }),
+      ...(config.apiVersion !== undefined && { apiVersion: config.apiVersion }),
       baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
       token: config.apiKey,
       fetch: config.fetch ?? globalThis.fetch,
@@ -91,5 +91,10 @@ export class Royaltyport {
 
   async search(projectId: string, query: string): Promise<ApiResponse<SearchResult>> {
     return this._http.get(`/projects/${projectId}/search`, { q: query });
+  }
+
+  /** Follow a same-origin API navigation/recovery link with this client's fixed release. */
+  async follow<T = unknown>(href: string): Promise<ApiResponse<T>> {
+    return this._http.follow<T>(href);
   }
 }
