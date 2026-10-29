@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Refresh security-sensitive test and build dependencies; preserve Node 18 runtime support.
+
+
 ## 2.0.0
 
 - Contract reads use dedicated paginated extraction collections.
