@@ -1,22 +1,24 @@
-import type { RateLimit } from './types/common.js';
+import type { ApiErrorDetails, RateLimit } from './types/common.js';
 
 export class RoyaltyportError extends Error {
   readonly status: number;
   readonly code: string | undefined;
   readonly rateLimit: RateLimit | undefined;
+  readonly details: ApiErrorDetails | undefined;
 
-  constructor(message: string, status: number, rateLimit?: RateLimit, code?: string) {
+  constructor(message: string, status: number, rateLimit?: RateLimit, code?: string, details?: ApiErrorDetails) {
     super(message);
     this.name = 'RoyaltyportError';
     this.status = status;
     this.code = code;
     this.rateLimit = rateLimit;
+    this.details = details;
   }
 }
 
 export class RoyaltyportAuthenticationError extends RoyaltyportError {
-  constructor(message: string, rateLimit?: RateLimit, code?: string) {
-    super(message, 401, rateLimit, code);
+  constructor(message: string, rateLimit?: RateLimit, code?: string, details?: ApiErrorDetails) {
+    super(message, 401, rateLimit, code, details);
     this.name = 'RoyaltyportAuthenticationError';
   }
 }
@@ -24,8 +26,8 @@ export class RoyaltyportAuthenticationError extends RoyaltyportError {
 export class RoyaltyportRateLimitError extends RoyaltyportError {
   readonly retryAfter: number | undefined;
 
-  constructor(message: string, rateLimit?: RateLimit, code?: string) {
-    super(message, 429, rateLimit, code);
+  constructor(message: string, rateLimit?: RateLimit, code?: string, details?: ApiErrorDetails) {
+    super(message, 429, rateLimit, code, details);
     this.name = 'RoyaltyportRateLimitError';
     this.retryAfter = rateLimit?.reset;
   }
@@ -34,8 +36,8 @@ export class RoyaltyportRateLimitError extends RoyaltyportError {
 export class RoyaltyportValidationError extends RoyaltyportError {
   readonly fields: Record<string, string[]> | undefined;
 
-  constructor(message: string, rateLimit?: RateLimit, fields?: Record<string, string[]>, code?: string) {
-    super(message, 400, rateLimit, code);
+  constructor(message: string, rateLimit?: RateLimit, fields?: Record<string, string[]>, code?: string, details?: ApiErrorDetails) {
+    super(message, 400, rateLimit, code, details);
     this.name = 'RoyaltyportValidationError';
     this.fields = fields;
   }
@@ -50,9 +52,9 @@ export class RoyaltyportUploadError extends RoyaltyportError {
 
   constructor(
     message: string,
-    options: { step: UploadStep; status: number; stagingId?: number; filePath?: string; rateLimit?: RateLimit; cause?: unknown },
+    options: { step: UploadStep; status: number; stagingId?: number; filePath?: string; rateLimit?: RateLimit; cause?: unknown; code?: string; details?: ApiErrorDetails },
   ) {
-    super(message, options.status, options.rateLimit);
+    super(message, options.status, options.rateLimit, options.code, options.details);
     this.name = 'RoyaltyportUploadError';
     this.step = options.step;
     this.stagingId = options.stagingId;

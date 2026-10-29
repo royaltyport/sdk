@@ -84,6 +84,8 @@ export interface ContractUploadContext {
 export interface UploadResult {
   staging_id: number;
   status: UploadStatus;
+  /** Poll this source-wide ingestion URL; confirmation is not processing completion. */
+  links?: { self: string };
   /** Document usage counted against capacity at admission. */
   usage_meter?: number | null;
   /** Maximum permitted document usage. */

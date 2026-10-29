@@ -3,7 +3,7 @@ import type { ApiVersion } from '../versioning.js';
 export interface RoyaltyportConfig {
   /** API key or OAuth access token */
   apiKey: string;
-  /** Exact release supported by these result types. Older SDK releases retain Aster. */
+  /** Optional assertion of the fixed Birch release; other releases are rejected. */
   apiVersion?: ApiVersion;
   /** Base URL for the API. Defaults to 'https://api.royaltyport.com' */
   baseUrl?: string;
@@ -31,11 +31,26 @@ export interface RateLimit {
   reset: number;
 }
 
+export interface ApiLinks {
+  self?: string;
+  next?: string | null;
+  agents?: string;
+  [key: string]: string | null | undefined;
+}
+
+export interface ApiErrorDetails {
+  code?: string;
+  message?: string;
+  links?: ApiLinks;
+  decision_id?: string;
+  [key: string]: unknown;
+}
+
 export interface ApiResponse<T, Meta = Record<string, unknown>> {
   /** Resolved API contract, checked against this client’s pin. */
   apiVersion: ApiVersion;
   meta?: Meta & { revision?: string };
-  links?: { next?: string | null; [key: string]: string | null | undefined };
+  links?: ApiLinks;
   data: T;
   rateLimit: RateLimit;
 }

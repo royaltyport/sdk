@@ -13,7 +13,7 @@ describe('API release pin', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     for (const [, init] of fetch.mock.calls) expect(new Headers(init.headers).get('Royaltyport-Version')).toBe(API_RELEASE);
   });
-  it.each([null, '2026-10-19.aster'])('rejects incompatible successful responses (%s) without retry', async version => {
+  it.each([null, '2026-04-20.aster'])('rejects incompatible successful responses (%s) without retry', async version => {
     const fetch = vi.fn().mockResolvedValue(new Response('{"data":[]}', { headers: version ? { 'Royaltyport-Version': version } : {} }));
     const client = new Royaltyport({ apiKey: 'key', fetch });
     await expect(client.projects.list()).rejects.toMatchObject({ code: 'api_version_mismatch' });
@@ -27,4 +27,14 @@ describe('API release pin', () => {
     expect(headers.has('Royaltyport-Version')).toBe(false);
     expect(headers.has('Authorization')).toBe(false);
   });
+});
+
+it('rejects another release at construction before any request', () => {
+  const fetch = vi.fn();
+  // JavaScript callers can pass values outside the published literal type.
+  expect(() => new Royaltyport({ apiKey: 'key', fetch, apiVersion: '2026-04-20.aster' as never }))
+    .toThrow('supports only 2026-10-20.birch');
+  expect(() => new Royaltyport({ apiKey: 'key', fetch, apiVersion: null as never }))
+    .toThrow('supports only 2026-10-20.birch');
+  expect(fetch).not.toHaveBeenCalled();
 });

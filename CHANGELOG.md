@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Keep the SDK Birch-only with a fixed wire contract and reject unsupported assertions before any request.
+- Expose typed navigation links and safe same-origin `follow<T>()` with the fixed release.
+- Preserve upload polling links, nullable admission/capacity and full response metadata.
+- Retain typed API error recovery details, including existing decision and readiness links.
+
+- Refresh security-sensitive test and build dependencies; preserve Node 18 runtime support.
+
+
 ## 2.0.0
 
 - Contract reads use dedicated paginated extraction collections.

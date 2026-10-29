@@ -159,7 +159,7 @@ await royaltyport.statements.resolveStaging(projectId, stagingId, {
 
 Use source-wide `status` and `terminal` for lifecycle decisions. Results live in
 `resources[]`; each `document_processes[]` entry has its own extraction details.
-The old singleton fields and `/retry` operation are Aster-only and absent from this Birch SDK.
+Use source-wide ingestion and pause-bound resolution; this SDK exposes only Birch response types.
 
 Score data is opt-in on contract and statement list/detail calls:
 
@@ -342,16 +342,15 @@ generates a replacement key. Resolution decision metadata is exposed through
 
 ## API release pin
 
-SDK 1.0 is typed for `2026-10-20.birch` and selects it by default. The API release is independent of SDK SemVer
-and the `/v1` URL namespace. Existing installed SDK packages without the
-header retain the server's Aster contract.
+This SDK supports only the fixed `2026-10-20.birch` contract. Its API pin is
+independent of package SemVer and the `/v1` URL namespace.
 
 ```ts
 import { Royaltyport, API_RELEASE } from '@royaltyport/sdk';
 
 const royaltyport = new Royaltyport({
   apiKey: process.env.ROYALTYPORT_API_KEY!,
-  apiVersion: API_RELEASE, // optional; this exact Birch release is the default
+  apiVersion: API_RELEASE, // optional assertion of the fixed Birch contract
 });
 const response = await royaltyport.projects.list();
 console.log(response.apiVersion);
@@ -363,10 +362,9 @@ mismatched response header raises `api_version_mismatch` without retrying.
 Authentication and invalid-selector errors may precede release resolution.
 Signed Storage requests carry neither the API release nor API credentials.
 
-The configuration deliberately accepts only the exact release matching these
-TypeScript declarations. Use an Aster SDK package or raw versioned HTTP for
-Aster; passing an arbitrary release string with Birch response types would be
-unsafe. See [the changelog](CHANGELOG.md) for the migration from SDK 0.8.
+The optional `apiVersion` field asserts this exact pin; it cannot select another
+release. Unsupported values fail before any request. There are no older response
+types or route adapters in this SDK.
 
 
 ### Hosted integration environment
@@ -431,3 +429,35 @@ if (runs.data[0]) {
 Keep the same project, filters and limit when reusing a cursor. Responses retain `meta` and `links.next`. These methods use the SDK’s Birch release pin.
 
 Contract ingestion returns `staging_split_processes` and `staging_split_manifest`. Replace the earlier Birch names `intermediate_processes` and `split_manifest`. Each resulting resource includes `links.agents`.
+
+
+## Following API links and recovering conflicts
+
+Extraction responses expose `links.self` and `links.next` alongside `data` and
+conditional `meta.revision`. Follow the returned link unchanged to preserve
+project scope, citations, page size and revision:
+
+```typescript
+const page = await royaltyport.contracts.listExtraction(projectId, contractId, 'recordings');
+if (page.links?.next) {
+  const nextPage = await royaltyport.follow(page.links.next);
+  console.log(nextPage.data);
+}
+```
+
+`follow<T>()` sends a GET using the same credentials and Birch pin. It accepts
+only this client's API origin under `/v1/`, rejects credential-bearing URLs and
+fragments, and refuses redirects. Signed Storage links use the separate upload
+transport, which carries neither API authorization nor the release header.
+
+Upload results include `data.links.self` for live ingestion polling. Confirmation
+`status` remains `uploaded`; `processing_status` describes admission by that call
+and can be null. Capacity fields can be zero or unavailable. These fields, plus
+response envelope metadata/links, survive the upload helper unchanged.
+
+API errors retain structured information in `error.details`, including `links`
+and `decision_id`. On `readiness_changed`, inspect `error.details.links.agents`
+before restarting pagination. On `resolution_response_contract_changed`, poll
+`error.details.links.self`, retain the decision reference and reuse the original
+idempotency key. Conflicts are not automatically retried or turned into a new
+decision. Upload-completion errors preserve the same details and original cause.

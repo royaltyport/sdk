@@ -40,3 +40,25 @@ describe('durable staging resolution', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+it('retains the existing decision and polling link on a frozen-response conflict without retrying', async () => {
+  const details = { code: 'resolution_response_contract_changed', message: 'Poll the existing decision',
+    decision_id: 'decision-existing', links: { self: '/v1/contracts/42/ingestion?projectId=project-1' } };
+  const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: details }), {
+    status: 409, headers: { 'Royaltyport-Version': '2026-10-20.birch' },
+  }));
+  await expect(fixture(fetch).contracts.resolveStaging('project-1', 42, body, { idempotencyKey: 'stable-key' }))
+    .rejects.toMatchObject({ status: 409, code: details.code, details });
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it('retains the canonical readiness link when a reader revision changes', async () => {
+  const details = { code: 'readiness_changed', message: 'Check readiness',
+    links: { agents: '/v1/contracts/42/agents?projectId=project-1' } };
+  const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: details }), {
+    status: 409, headers: { 'Royaltyport-Version': '2026-10-20.birch' },
+  }));
+  await expect(fixture(fetch).contracts.listExtraction('project-1', 42, 'recordings', { expectedRevision: 'r1_old' }))
+    .rejects.toMatchObject({ code: details.code, details });
+  expect(fetch).toHaveBeenCalledTimes(1);
+});

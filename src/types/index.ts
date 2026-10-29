@@ -4,6 +4,8 @@ export type {
   PaginatedResult,
   RateLimit,
   ApiResponse,
+  ApiLinks,
+  ApiErrorDetails,
 } from './common.js';
 
 export type { AssetIdentifier, AssetIdentifierType } from './identifiers.js';
