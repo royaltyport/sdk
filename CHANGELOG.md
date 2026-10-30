@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 (2026-10-30)
 
 - Keep the SDK Birch-only with a fixed wire contract and reject unsupported assertions before any request.
 - Expose typed navigation links and safe same-origin `follow<T>()` with the fixed release.
@@ -8,6 +8,17 @@
 - Retain typed API error recovery details, including existing decision and readiness links.
 
 - Refresh security-sensitive test and build dependencies; preserve Node 18 runtime support.
+
+### Upgrade from 2.0
+
+- Existing Birch integrations retain the same API release. An optional
+  `apiVersion` assertion must match `2026-10-20.birch`; unsupported values fail
+  before a request is sent.
+- Use `client.follow<T>(href)` for returned navigation links. It accepts only
+  same-origin `/v1/` GET links and refuses redirects, retaining the fixed release
+  and credentials without sending them to external URLs.
+- Upload results now retain polling links and nullable admission/capacity
+  metadata. API errors expose typed `details` for decision and readiness recovery.
 
 
 ## 2.0.0
